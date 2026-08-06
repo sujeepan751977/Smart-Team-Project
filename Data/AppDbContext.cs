@@ -92,27 +92,32 @@ namespace Recruitment_Project.Data
             modelBuilder.Entity<JobApplication>()
                 .HasOne(x => x.Vacancy)
                 .WithMany(x => x.Applications)
-                .HasForeignKey(x => x.VacancyId);
+                .HasForeignKey(x => x.VacancyId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<JobApplication>()
                 .HasOne(x => x.JobSeekerProfile)
                 .WithMany()
-                .HasForeignKey(x => x.JobSeekerProfileId);
+                .HasForeignKey(x => x.JobSeekerProfileId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<ContactRequest>()
                 .HasOne(x => x.JobApplication)
                 .WithMany()
-                .HasForeignKey(x => x.JobApplicationId);
+                .HasForeignKey(x => x.JobApplicationId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<ContactRequest>()
                 .HasOne(x => x.EmployerProfile)
                 .WithMany()
-                .HasForeignKey(x => x.EmployerProfileId);
+                .HasForeignKey(x => x.EmployerProfileId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<ContactRequest>()
                 .HasOne(x => x.JobSeekerProfile)
                 .WithMany()
-                .HasForeignKey(x => x.JobSeekerProfileId);
+                .HasForeignKey(x => x.JobSeekerProfileId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<InterviewSchedule>()
                 .HasOne(x => x.JobApplication)
@@ -140,6 +145,8 @@ namespace Recruitment_Project.Data
                 .WithMany()
                 .HasForeignKey(x => x.AdminUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
         }
     }
 }
