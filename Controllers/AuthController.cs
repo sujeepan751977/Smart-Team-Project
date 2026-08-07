@@ -22,10 +22,21 @@ namespace Recruitment_Project.Controllers
             _jwtTokenService = jwtTokenService;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequestDto request)
+        [HttpPost("register/job-seeker")]
+        public async Task<IActionResult> RegisterJobSeeker(RegisterJobSeekerDto request)
         {
-            var result = await _authService.RegisterAsync(request);
+            var result = await _authService.RegisterJobSeekerAsync(request);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpPost("register/employer")]
+        public async Task<IActionResult> RegisterEmployer(RegisterEmployerDto request)
+        {
+            var result = await _authService.RegisterEmployerAsync(request);
 
             if (!result.Success)
                 return BadRequest(result);

@@ -2,6 +2,7 @@
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Models.Entities;
+using Recruitment_Project.Models.Enums;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -20,7 +21,7 @@ namespace Recruitment_Project.Services
             _jwtTokenService = jwtTokenService;
         }
 
-        public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
+        public async Task<AuthResponseDto> RegisterJobSeekerAsync(RegisterJobSeekerDto request)
         {
             if (await _userRepository.EmailExistsAsync(request.Email))
             {
@@ -36,7 +37,7 @@ namespace Recruitment_Project.Services
                 FullName = request.FullName,
                 Email = request.Email.Trim().ToLower(),
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = request.Role,
+                Role = UserRole.JobSeeker,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
@@ -47,7 +48,39 @@ namespace Recruitment_Project.Services
             return new AuthResponseDto
             {
                 Success = true,
-                Message = "Registration successful.",
+                Message = "Job Seeker registered successfully.",
+                UserId = user.Id
+            };
+        }
+
+        public async Task<AuthResponseDto> RegisterEmployerAsync(RegisterEmployerDto request)
+        {
+            if (await _userRepository.EmailExistsAsync(request.Email))
+            {
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Email already exists."
+                };
+            }
+
+            var user = new User
+            {
+                FullName = request.FullName,
+                Email = request.Email.Trim().ToLower(),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                Role = UserRole.Employer,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.AddAsync(user);
+            await _userRepository.SaveChangesAsync();
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = "Employer registered successfully.",
                 UserId = user.Id
             };
         }
@@ -62,6 +95,15 @@ namespace Recruitment_Project.Services
                 {
                     Success = false,
                     Message = "Invalid email or password."
+                };
+            }
+
+            if (!user.IsActive)
+            {
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Your account has been disabled. Please contact the administrator."
                 };
             }
 
@@ -148,5 +190,7 @@ namespace Recruitment_Project.Services
         {
             return GetCurrentUserAsync(userId);
         }
+
+
     }
 }

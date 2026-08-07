@@ -2,6 +2,7 @@
 using Recruitment_Project.Data;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Models.Entities;
+using Recruitment_Project.Models.Enums;
 
 namespace Recruitment_Project.Repositories
 {
@@ -58,6 +59,43 @@ namespace Recruitment_Project.Repositories
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+
+        public async Task<int> GetTotalUsersAsync()
+        {
+            return await _context.Users.CountAsync();
+        }
+
+        public async Task<int> GetTotalJobSeekersAsync()
+        {
+            return await _context.Users
+                .CountAsync(x => x.Role == UserRole.JobSeeker);
+        }
+
+        public async Task<int> GetTotalEmployersAsync()
+        {
+            return await _context.Users
+                .CountAsync(x => x.Role == UserRole.Employer);
+        }
+
+        public async Task<int> GetActiveUsersAsync()
+        {
+            return await _context.Users
+                .CountAsync(x => x.IsActive);
+        }
+
+        public async Task<int> GetDisabledUsersAsync()
+        {
+            return await _context.Users
+                .CountAsync(x => !x.IsActive);
+        }
+
+        public async Task<List<User>> GetAllUsersAsync()
+        {
+            return await _context.Users
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
         }
     }
 }

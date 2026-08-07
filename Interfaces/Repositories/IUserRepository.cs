@@ -19,5 +19,17 @@ namespace Recruitment_Project.Interfaces.Repositories
         Task DeleteAsync(User user);
 
         Task SaveChangesAsync();
+
+        Task<int> GetTotalUsersAsync();
+
+        Task<int> GetTotalJobSeekersAsync();
+
+        Task<int> GetTotalEmployersAsync();
+
+        Task<int> GetActiveUsersAsync();
+
+        Task<int> GetDisabledUsersAsync();
+        Task<List<User>> GetAllUsersAsync();
+        
     }
 }
