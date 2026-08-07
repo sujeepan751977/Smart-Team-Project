@@ -10,10 +10,14 @@ namespace Recruitment_Project.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IJwtTokenService _jwtTokenService;
 
-        public AuthService(IUserRepository userRepository)
+        public AuthService(
+            IUserRepository userRepository,
+            IJwtTokenService jwtTokenService)
         {
             _userRepository = userRepository;
+            _jwtTokenService = jwtTokenService;
         }
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -31,7 +35,7 @@ namespace Recruitment_Project.Services
             {
                 FullName = request.FullName,
                 Email = request.Email.Trim().ToLower(),
-                PasswordHash = HashPassword(request.Password),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Role = request.Role,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -61,7 +65,7 @@ namespace Recruitment_Project.Services
                 };
             }
 
-            if (user.PasswordHash != HashPassword(request.Password))
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 return new AuthResponseDto
                 {
@@ -70,12 +74,18 @@ namespace Recruitment_Project.Services
                 };
             }
 
+            var token = _jwtTokenService.GenerateToken(user);
+
             return new AuthResponseDto
             {
                 Success = true,
                 Message = "Login successful.",
                 UserId = user.Id,
-                Role = user.Role.ToString()
+                FullName = user.FullName,
+                Email = user.Email,
+                Role = user.Role.ToString(),
+                Token = token,
+                Expiration = DateTime.UtcNow.AddMinutes(60)
             };
         }
 
@@ -86,10 +96,10 @@ namespace Recruitment_Project.Services
             if (user == null)
                 return false;
 
-            if (user.PasswordHash != HashPassword(request.CurrentPassword))
+            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
                 return false;
 
-            user.PasswordHash = HashPassword(request.NewPassword);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
@@ -105,7 +115,7 @@ namespace Recruitment_Project.Services
             if (user == null)
                 return false;
 
-            user.PasswordHash = HashPassword(request.NewPassword);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
@@ -126,24 +136,17 @@ namespace Recruitment_Project.Services
                 Id = user.Id,
                 FullName = user.FullName,
                 Email = user.Email,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt
             };
         }
 
-        private static string HashPassword(string password)
-        {
-            using var sha = SHA256.Create();
 
-            var bytes = Encoding.UTF8.GetBytes(password);
-
-            var hash = sha.ComputeHash(bytes);
-
-            return Convert.ToBase64String(hash);
-        }
 
         Task<UserDto?> IAuthService.GetCurrentUserAsync(int userId)
         {
-            throw new NotImplementedException();
+            return GetCurrentUserAsync(userId);
         }
     }
 }
