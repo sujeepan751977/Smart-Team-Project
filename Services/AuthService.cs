@@ -12,13 +12,16 @@ namespace Recruitment_Project.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IJwtTokenService _jwtTokenService;
+        private readonly IJobSeekerRepository _jobSeekerRepository;
 
         public AuthService(
             IUserRepository userRepository,
-            IJwtTokenService jwtTokenService)
+            IJwtTokenService jwtTokenService,
+            IJobSeekerRepository jobSeekerRepository)
         {
             _userRepository = userRepository;
             _jwtTokenService = jwtTokenService;
+            _jobSeekerRepository = jobSeekerRepository;
         }
 
         public async Task<AuthResponseDto> RegisterJobSeekerAsync(RegisterJobSeekerDto request)
@@ -44,6 +47,21 @@ namespace Recruitment_Project.Services
 
             await _userRepository.AddAsync(user);
             await _userRepository.SaveChangesAsync();
+
+            var profile = new JobSeekerProfile
+            {
+                UserId = user.Id,
+                ProfessionalTitle = string.Empty,
+                Location = string.Empty,
+                ExperienceInYears = 0,
+                Education = string.Empty,
+                About = string.Empty,
+                ProfileCompletionPercentage = 0,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _jobSeekerRepository.AddProfileAsync(profile);
+            await _jobSeekerRepository.SaveChangesAsync();
 
             return new AuthResponseDto
             {
