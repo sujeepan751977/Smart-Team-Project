@@ -9,6 +9,7 @@ using Recruitment_Project.Options;
 using Recruitment_Project.Repositories;
 using Recruitment_Project.Services;
 using System.Text;
+using Recruitment_Project.Middleware;
 
 
 namespace Recruitment_Project
@@ -66,7 +67,15 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+
+
+
+
+
+
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IAdminUserService, AdminUserService>();
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
             // -------------------------
@@ -115,6 +124,12 @@ namespace Recruitment_Project
 
             var app = builder.Build();
 
+         
+          
+
+            // Global Exception Middleware
+            app.UseMiddleware<ExceptionMiddleware>();
+
             // -------------------------
             // Middleware
             // -------------------------
@@ -127,11 +142,17 @@ namespace Recruitment_Project
             app.UseHttpsRedirection();
 
             app.UseAuthentication();
+
+            app.UseMiddleware<ActiveAccountMiddleware>();
             app.UseAuthorization();
+
+
 
             app.MapControllers();
 
             app.Run();
+
+            
         }
     }
 }
