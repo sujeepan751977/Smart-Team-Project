@@ -8,9 +8,8 @@ using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Options;
 using Recruitment_Project.Repositories;
 using Recruitment_Project.Services;
-using System.Text;
 using Recruitment_Project.Middleware;
-
+using System.Text;
 
 namespace Recruitment_Project
 {
@@ -67,35 +66,30 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
             builder.Services.AddScoped<IUserRepository, UserRepository>();
-<<<<<<< HEAD
 
-            builder.Services.AddScoped<IEmployerRepository, EmployerRepository>();
-
-            builder.Services.AddScoped<IEmployerVerificationRepository, EmployerVerificationRepository>();
-            builder.Services.AddScoped<IEmployerVerificationService, EmployerVerificationService>();
-=======
+            // Member 1
             builder.Services.AddScoped<IJobSeekerRepository, JobSeekerRepository>();
             builder.Services.AddScoped<IJobSearchRepository, JobSearchRepository>();
             builder.Services.AddScoped<ICvRepository, CvRepository>();
->>>>>>> origin/main
 
+            // Member 3 - Employer
+            builder.Services.AddScoped<IEmployerRepository, EmployerRepository>();
+            builder.Services.AddScoped<IEmployerVerificationRepository, EmployerVerificationRepository>();
 
-
-
+            // Services
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IAdminUserService, AdminUserService>();
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-<<<<<<< HEAD
 
-            builder.Services.AddScoped<IEmployerService, EmployerService>();
-=======
+            // Member 1
             builder.Services.AddScoped<IJobSeekerService, JobSeekerService>();
             builder.Services.AddScoped<IMatchingService, MatchingService>();
             builder.Services.AddScoped<ICvFileStorageService, CvFileStorageService>();
             builder.Services.AddScoped<IJobSearchService, JobSearchService>();
 
->>>>>>> origin/main
-
+            // Member 3
+            builder.Services.AddScoped<IEmployerService, EmployerService>();
+            builder.Services.AddScoped<IEmployerVerificationService, EmployerVerificationService>();
 
             // -------------------------
             // Controllers
@@ -143,9 +137,6 @@ namespace Recruitment_Project
 
             var app = builder.Build();
 
-         
-          
-
             // Global Exception Middleware
             app.UseMiddleware<ExceptionMiddleware>();
 
@@ -163,15 +154,12 @@ namespace Recruitment_Project
             app.UseAuthentication();
 
             app.UseMiddleware<ActiveAccountMiddleware>();
+
             app.UseAuthorization();
-
-
 
             app.MapControllers();
 
             app.Run();
-
-            
         }
     }
 }
