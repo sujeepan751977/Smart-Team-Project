@@ -67,17 +67,9 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
             builder.Services.AddScoped<IUserRepository, UserRepository>();
-<<<<<<< HEAD
-
-            builder.Services.AddScoped<IEmployerRepository, EmployerRepository>();
-
-            builder.Services.AddScoped<IEmployerVerificationRepository, EmployerVerificationRepository>();
-            builder.Services.AddScoped<IEmployerVerificationService, EmployerVerificationService>();
-=======
             builder.Services.AddScoped<IJobSeekerRepository, JobSeekerRepository>();
             builder.Services.AddScoped<IJobSearchRepository, JobSearchRepository>();
             builder.Services.AddScoped<ICvRepository, CvRepository>();
->>>>>>> origin/main
 
 
 
@@ -85,16 +77,11 @@ namespace Recruitment_Project
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IAdminUserService, AdminUserService>();
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-<<<<<<< HEAD
-
-            builder.Services.AddScoped<IEmployerService, EmployerService>();
-=======
             builder.Services.AddScoped<IJobSeekerService, JobSeekerService>();
             builder.Services.AddScoped<IMatchingService, MatchingService>();
             builder.Services.AddScoped<ICvFileStorageService, CvFileStorageService>();
             builder.Services.AddScoped<IJobSearchService, JobSearchService>();
 
->>>>>>> origin/main
 
 
             // -------------------------
