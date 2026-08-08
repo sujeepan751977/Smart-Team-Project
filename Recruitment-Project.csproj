@@ -24,8 +24,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+<<<<<<< HEAD
   <ItemGroup>
     <Folder Include="DTOs\Vacancies\" />
   </ItemGroup>
 
+=======
+>>>>>>> origin/main
 </Project>
