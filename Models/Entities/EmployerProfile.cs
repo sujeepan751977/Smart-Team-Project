@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Recruitment_Project.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Recruitment_Project.Models.Entities
 {
@@ -52,5 +53,7 @@ namespace Recruitment_Project.Models.Entities
         public EmployerVerification? Verification { get; set; }
 
         public ICollection<Vacancy> Vacancies { get; set; } = new List<Vacancy>();
+
+        public EmployerAccountStatus AccountStatus { get; set; } = EmployerAccountStatus.Active;
     }
 }

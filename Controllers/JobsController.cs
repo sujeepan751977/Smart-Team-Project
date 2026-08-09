@@ -13,6 +13,7 @@ namespace Recruitment_Project.Controllers
         private readonly IJobSearchService _jobSearchService;
 
 
+
         public JobsController(
             IJobSearchService jobSearchService)
         {
