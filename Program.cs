@@ -71,10 +71,13 @@ namespace Recruitment_Project
             builder.Services.AddScoped<IJobSeekerRepository, JobSeekerRepository>();
             builder.Services.AddScoped<IJobSearchRepository, JobSearchRepository>();
             builder.Services.AddScoped<ICvRepository, CvRepository>();
+            
+            
 
             // Member 3 - Employer
             builder.Services.AddScoped<IEmployerRepository, EmployerRepository>();
             builder.Services.AddScoped<IEmployerVerificationRepository, EmployerVerificationRepository>();
+            builder.Services.AddScoped<IVacancyRepository, VacancyRepository>();
 
             // Services
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -90,6 +93,10 @@ namespace Recruitment_Project
             // Member 3
             builder.Services.AddScoped<IEmployerService, EmployerService>();
             builder.Services.AddScoped<IEmployerVerificationService, EmployerVerificationService>();
+            builder.Services.AddScoped<IVacancyService, VacancyService>();
+            builder.Services.AddScoped<IVacancyApprovalService, VacancyApprovalService>();
+            builder.Services.AddScoped<IEmployerVerificationAdminService, EmployerVerificationAdminService>();
+            builder.Services.AddScoped<IVerificationDocumentStorageService, VerificationDocumentStorageService>();
 
             // -------------------------
             // Controllers

@@ -1,4 +1,5 @@
-﻿using Recruitment_Project.Models.Entities;
+﻿using Recruitment_Project.DTOs.Employers;
+using Recruitment_Project.Models.Entities;
 
 namespace Recruitment_Project.Interfaces.Repositories
 {
@@ -9,6 +10,8 @@ namespace Recruitment_Project.Interfaces.Repositories
         Task AddAsync(EmployerProfile employerProfile);
 
         Task UpdateAsync(EmployerProfile employerProfile);
+
+        Task<EmployerDashboardDto> GetDashboardAsync(int employerProfileId);
 
         Task SaveChangesAsync();
     }

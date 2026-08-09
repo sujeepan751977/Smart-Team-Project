@@ -6,7 +6,13 @@ namespace Recruitment_Project.Interfaces.Repositories
     {
         Task<EmployerVerification?> GetByEmployerProfileIdAsync(int employerProfileId);
 
+        Task<List<EmployerVerification>> GetAllAsync();
+
+        Task<EmployerVerification?> GetByIdAsync(int id);
+
         Task AddAsync(EmployerVerification verification);
+
+        Task DeleteDocumentAsync(int documentId);
 
         Task UpdateAsync(EmployerVerification verification);
 

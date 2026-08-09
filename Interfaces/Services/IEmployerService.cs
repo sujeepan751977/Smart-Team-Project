@@ -9,6 +9,8 @@ namespace Recruitment_Project.Interfaces.Services
         Task CreateProfileAsync(int userId, UpdateEmployerProfileDto dto);
 
         Task UpdateProfileAsync(int userId, UpdateEmployerProfileDto dto);
+
+        Task<EmployerDashboardDto> GetDashboardAsync(int userId);
     }
 }
     
