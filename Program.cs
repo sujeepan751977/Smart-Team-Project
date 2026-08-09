@@ -11,7 +11,6 @@ using Recruitment_Project.Services;
 using System.Text;
 using Recruitment_Project.Middleware;
 
-
 namespace Recruitment_Project
 {
     public class Program
@@ -67,22 +66,31 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+            // Notifications
+            builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
+
+            // Member 1 - Job Seeker
             builder.Services.AddScoped<IJobSeekerRepository, JobSeekerRepository>();
             builder.Services.AddScoped<IJobSearchRepository, JobSearchRepository>();
             builder.Services.AddScoped<ICvRepository, CvRepository>();
 
+            // Member 5 - Job Reports
+            builder.Services.AddScoped<IJobReportRepository, JobReportRepository>();
+            builder.Services.AddScoped<IJobReportService, JobReportService>();
+            builder.Services.AddScoped<IJobReportAdminService, JobReportAdminService>();
 
-
-
+            // Authentication / Admin
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IAdminUserService, AdminUserService>();
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+            // Member 1 - Services
             builder.Services.AddScoped<IJobSeekerService, JobSeekerService>();
             builder.Services.AddScoped<IMatchingService, MatchingService>();
             builder.Services.AddScoped<ICvFileStorageService, CvFileStorageService>();
             builder.Services.AddScoped<IJobSearchService, JobSearchService>();
-
-
 
             // -------------------------
             // Controllers
@@ -130,10 +138,9 @@ namespace Recruitment_Project
 
             var app = builder.Build();
 
-         
-          
-
+            // -------------------------
             // Global Exception Middleware
+            // -------------------------
             app.UseMiddleware<ExceptionMiddleware>();
 
             // -------------------------
@@ -150,15 +157,12 @@ namespace Recruitment_Project
             app.UseAuthentication();
 
             app.UseMiddleware<ActiveAccountMiddleware>();
+
             app.UseAuthorization();
-
-
 
             app.MapControllers();
 
             app.Run();
-
-            
         }
     }
 }
