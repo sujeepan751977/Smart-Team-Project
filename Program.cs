@@ -67,12 +67,13 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
-
-
-
-
+            builder.Services.AddScoped<IJobReportRepository, JobReportRepository>();
+            builder.Services.AddScoped<IJobReportService, JobReportService>();
+            builder.Services.AddScoped<IJobReportAdminService, JobReportAdminService>();
 
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IAdminUserService, AdminUserService>();
