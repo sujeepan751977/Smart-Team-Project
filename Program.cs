@@ -1,10 +1,8 @@
 using System.Text;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
 using Recruitment_Project.Data;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
@@ -214,8 +212,7 @@ namespace Recruitment_Project
                     "Bearer",
                     new OpenApiSecurityScheme
                     {
-                        Description =
-                            "Enter JWT Token only",
+                        Description = "Enter JWT Token only",
                         Name = "Authorization",
                         In = ParameterLocation.Header,
                         Type = SecuritySchemeType.Http,
@@ -229,13 +226,11 @@ namespace Recruitment_Project
                         {
                             new OpenApiSecurityScheme
                             {
-                                Reference =
-                                    new OpenApiReference
-                                    {
-                                        Type =
-                                            ReferenceType.SecurityScheme,
-                                        Id = "Bearer"
-                                    }
+                                Name = "Authorization",
+                                Type = SecuritySchemeType.Http,
+                                Scheme = "bearer",
+                                BearerFormat = "JWT",
+                                In = ParameterLocation.Header
                             },
                             Array.Empty<string>()
                         }
