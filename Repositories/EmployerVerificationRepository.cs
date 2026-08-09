@@ -21,6 +21,32 @@ namespace Recruitment_Project.Repositories
                 .FirstOrDefaultAsync(x => x.EmployerProfileId == employerProfileId);
         }
 
+        public async Task<List<EmployerVerification>> GetAllAsync()
+        {
+            return await _context.EmployerVerifications
+                .Include(x => x.Documents)
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<EmployerVerification?> GetByIdAsync(int id)
+        {
+            return await _context.EmployerVerifications
+                .Include(x => x.Documents)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+        public async Task DeleteDocumentAsync(int documentId)
+        {
+            var document = await _context.EmployerVerificationDocuments
+                .FirstOrDefaultAsync(x => x.Id == documentId);
+
+            if (document == null)
+                throw new Exception("Verification document not found");
+
+            _context.EmployerVerificationDocuments.Remove(document);
+        }
+
         public async Task AddAsync(EmployerVerification verification)
         {
             await _context.EmployerVerifications.AddAsync(verification);

@@ -62,5 +62,16 @@ namespace Recruitment_Project.Controllers
                 Message = "Employer profile updated successfully."
             });
         }
+
+        [HttpGet("me/dashboard")]
+        public async Task<IActionResult> GetMyDashboard()
+        {
+            var userId = int.Parse(
+                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+            var dashboard = await _employerService.GetDashboardAsync(userId);
+
+            return Ok(dashboard);
+        }
     }
 }

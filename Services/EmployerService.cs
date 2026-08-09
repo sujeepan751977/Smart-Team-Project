@@ -89,5 +89,17 @@ namespace Recruitment_Project.Services
 
             await _employerRepository.SaveChangesAsync();
         }
+
+        public async Task<EmployerDashboardDto> GetDashboardAsync(int userId)
+        {
+            var employerProfile = await _employerRepository.GetByUserIdAsync(userId);
+
+            if (employerProfile == null)
+            {
+                throw new Exception("Employer profile not found");
+            }
+
+            return await _employerRepository.GetDashboardAsync(employerProfile.Id);
+        }
     }
 }
