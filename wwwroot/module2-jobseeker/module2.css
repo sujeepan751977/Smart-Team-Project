@@ -1,0 +1,67 @@
+.jobs-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.filters-panel {
+  position: sticky;
+  top: calc(var(--header-h) + 1rem);
+}
+
+.match-panel .score {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.skill-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.welcome-banner {
+  background: linear-gradient(120deg, var(--navy), #1d4ed8);
+  color: #fff;
+  border: 0;
+}
+
+.welcome-banner h1,
+.welcome-banner p {
+  color: #fff;
+}
+
+.welcome-banner .muted {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ring-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ring {
+  --p: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: conic-gradient(var(--blue) calc(var(--p) * 1%), #e2e8f0 0);
+  display: grid;
+  place-items: center;
+}
+
+.ring::before {
+  content: attr(data-label);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--navy);
+}
