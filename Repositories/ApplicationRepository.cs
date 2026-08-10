@@ -18,7 +18,9 @@ namespace Recruitment_Project.Repositories
         {
             return await _context.JobApplications
                 .Include(x => x.Vacancy)
+                    .ThenInclude(x => x.EmployerProfile)
                 .Include(x => x.JobSeekerProfile)
+                    .ThenInclude(x => x.User)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 

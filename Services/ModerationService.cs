@@ -200,6 +200,18 @@ namespace Recruitment_Project.Services
                 previousValue,
                 newValue);
 
+            // Notify Employer
+            await _notificationService.CreateAsync(
+                new Notification
+                {
+                    UserId = vacancy.EmployerProfile.UserId,
+                    Type = NotificationType.Moderation,
+                    Title = "Vacancy Closed",
+                    Message =
+                        $"Your vacancy \"{vacancy.Title}\" has been closed by an administrator. " +
+                        $"Reason: {decisionNote}"
+                });
+
             await _moderationRepository.SaveChangesAsync();
         }
 

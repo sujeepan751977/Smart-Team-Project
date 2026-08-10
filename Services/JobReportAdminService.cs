@@ -8,11 +8,14 @@ namespace Recruitment_Project.Services
     public class JobReportAdminService : IJobReportAdminService
     {
         private readonly IJobReportRepository _jobReportRepository;
+        private readonly INotificationService _notificationService;
 
         public JobReportAdminService(
-            IJobReportRepository jobReportRepository)
+            IJobReportRepository jobReportRepository,
+            INotificationService notificationService)
         {
             _jobReportRepository = jobReportRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<JobReport>> GetAllReportsAsync()
@@ -45,6 +48,16 @@ namespace Recruitment_Project.Services
 
             await _jobReportRepository.UpdateAsync(report);
             await _jobReportRepository.SaveChangesAsync();
+
+            await _notificationService.CreateAsync(
+                new Notification
+                {
+                    UserId = report.ReportedByUserId,
+                    Type = NotificationType.JobReport,
+                    Title = "Job Report Under Review",
+                    Message =
+                        "Your job report has been received and is now under review."
+                });
         }
 
         public async Task ResolveReportAsync(int reportId)
@@ -60,6 +73,16 @@ namespace Recruitment_Project.Services
 
             await _jobReportRepository.UpdateAsync(report);
             await _jobReportRepository.SaveChangesAsync();
+
+            await _notificationService.CreateAsync(
+                new Notification
+                {
+                    UserId = report.ReportedByUserId,
+                    Type = NotificationType.JobReport,
+                    Title = "Job Report Resolved",
+                    Message =
+                        "Your job report has been reviewed and appropriate action has been taken."
+                });
         }
 
         public async Task DismissReportAsync(int reportId)
@@ -75,6 +98,16 @@ namespace Recruitment_Project.Services
 
             await _jobReportRepository.UpdateAsync(report);
             await _jobReportRepository.SaveChangesAsync();
+
+            await _notificationService.CreateAsync(
+                new Notification
+                {
+                    UserId = report.ReportedByUserId,
+                    Type = NotificationType.JobReport,
+                    Title = "Job Report Dismissed",
+                    Message =
+                        "Your job report has been reviewed and dismissed."
+                });
         }
     }
 }

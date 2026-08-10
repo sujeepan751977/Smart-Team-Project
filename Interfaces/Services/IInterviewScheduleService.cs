@@ -10,12 +10,12 @@ namespace Recruitment_Project.Interfaces.Services
             CreateInterviewScheduleDto dto);
 
 
-        Task<List<InterviewScheduleDto>> 
+        Task<List<InterviewScheduleDto>>
             GetEmployerInterviewsAsync(
             int userId);
 
 
-        Task<List<InterviewScheduleDto>> 
+        Task<List<InterviewScheduleDto>>
             GetJobSeekerInterviewsAsync(
             int userId);
     }

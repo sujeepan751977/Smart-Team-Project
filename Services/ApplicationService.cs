@@ -3,7 +3,6 @@ using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Models.Entities;
 using Recruitment_Project.Models.Enums;
-using Recruitment_Project.Repositories;
 
 namespace Recruitment_Project.Services
 {
@@ -14,18 +13,22 @@ namespace Recruitment_Project.Services
         private readonly IVacancyRepository _vacancyRepository;
         private readonly IMatchingService _matchingService;
         private readonly IEmployerRepository _employerRepository;
+        private readonly INotificationService _notificationService;
+
         public ApplicationService(
             IApplicationRepository applicationRepository,
             IJobSeekerRepository jobSeekerRepository,
             IVacancyRepository vacancyRepository,
             IMatchingService matchingService,
-            IEmployerRepository employerRepository)
+            IEmployerRepository employerRepository,
+            INotificationService notificationService)
         {
             _applicationRepository = applicationRepository;
             _jobSeekerRepository = jobSeekerRepository;
             _vacancyRepository = vacancyRepository;
             _matchingService = matchingService;
             _employerRepository = employerRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<ApplicationDto> ApplyAsync(
@@ -90,6 +93,31 @@ namespace Recruitment_Project.Services
             await _applicationRepository.AddAsync(application);
             await _applicationRepository.SaveChangesAsync();
 
+            // Reload application with Vacancy -> EmployerProfile
+            // and JobSeekerProfile -> User navigation properties.
+            var savedApplication =
+                await _applicationRepository
+                    .GetByIdAsync(application.Id);
+
+            if (savedApplication != null)
+            {
+                var employerUserId =
+                    savedApplication
+                        .Vacancy
+                        .EmployerProfile
+                        .UserId;
+
+                await _notificationService.CreateAsync(
+                    new Notification
+                    {
+                        UserId = employerUserId,
+                        Type = NotificationType.Application,
+                        Title = "New Job Application",
+                        Message =
+                            $"A new application has been submitted for your vacancy \"{savedApplication.Vacancy.Title}\"."
+                    });
+            }
+
             return new ApplicationDto
             {
                 Id = application.Id,
@@ -104,7 +132,7 @@ namespace Recruitment_Project.Services
         }
 
         public async Task<List<ApplicationDto>> GetMyApplicationsAsync(
-      int userId)
+            int userId)
         {
             var jobSeeker =
                 await _jobSeekerRepository
@@ -139,29 +167,32 @@ namespace Recruitment_Project.Services
             int userId)
         {
             var employer =
-                await _employerRepository.GetByUserIdAsync(userId);
+                await _employerRepository
+                    .GetByUserIdAsync(userId);
 
             if (employer == null)
+            {
                 throw new KeyNotFoundException(
                     "Employer profile not found.");
+            }
 
             var applications =
                 await _applicationRepository
                     .GetByEmployerAsync(employer.Id);
 
-
-            return applications.Select(x => new ApplicationDto
-            {
-                Id = x.Id,
-                VacancyId = x.VacancyId,
-                JobSeekerProfileId = x.JobSeekerProfileId,
-                Status = x.Status.ToString(),
-                MatchScore = x.MatchScore,
-                CoverLetter = x.CoverLetter,
-                AppliedAt = x.AppliedAt,
-                UpdatedAt = x.UpdatedAt
-
-            }).ToList();
+            return applications
+                .Select(x => new ApplicationDto
+                {
+                    Id = x.Id,
+                    VacancyId = x.VacancyId,
+                    JobSeekerProfileId = x.JobSeekerProfileId,
+                    Status = x.Status.ToString(),
+                    MatchScore = x.MatchScore,
+                    CoverLetter = x.CoverLetter,
+                    AppliedAt = x.AppliedAt,
+                    UpdatedAt = x.UpdatedAt
+                })
+                .ToList();
         }
 
         public async Task<ApplicationDto?> GetApplicationByIdAsync(
@@ -169,7 +200,8 @@ namespace Recruitment_Project.Services
             int applicationId)
         {
             var employer =
-                await _employerRepository.GetByUserIdAsync(userId);
+                await _employerRepository
+                    .GetByUserIdAsync(userId);
 
             if (employer == null)
             {
@@ -178,7 +210,8 @@ namespace Recruitment_Project.Services
             }
 
             var application =
-                await _applicationRepository.GetByIdAsync(applicationId);
+                await _applicationRepository
+                    .GetByIdAsync(applicationId);
 
             if (application == null)
             {
@@ -203,6 +236,7 @@ namespace Recruitment_Project.Services
                 UpdatedAt = application.UpdatedAt
             };
         }
+
         public async Task UpdateStatusAsync(
             int userId,
             int applicationId,
@@ -218,21 +252,37 @@ namespace Recruitment_Project.Services
                     "Application not found.");
             }
 
-            if (Enum.TryParse<ApplicationStatus>(
+            if (!Enum.TryParse<ApplicationStatus>(
                 status,
                 true,
                 out var newStatus))
             {
-                application.Status = newStatus;
-                application.UpdatedAt = DateTime.UtcNow;
-
-                await _applicationRepository.SaveChangesAsync();
-            }
-            else
-            {
                 throw new InvalidOperationException(
                     "Invalid application status.");
             }
+
+            var previousStatus = application.Status;
+
+            application.Status = newStatus;
+            application.UpdatedAt = DateTime.UtcNow;
+
+            await _applicationRepository.SaveChangesAsync();
+
+            // Notify JobSeeker about application status change.
+            var jobSeekerUserId =
+                application
+                    .JobSeekerProfile
+                    .UserId;
+
+            await _notificationService.CreateAsync(
+                new Notification
+                {
+                    UserId = jobSeekerUserId,
+                    Type = NotificationType.Application,
+                    Title = "Application Status Updated",
+                    Message =
+                        $"Your application for \"{application.Vacancy.Title}\" has changed from {previousStatus} to {newStatus}."
+                });
         }
 
         public async Task<List<ApplicationDto>> GetApplicantsByVacancyAsync(
@@ -240,7 +290,8 @@ namespace Recruitment_Project.Services
             int vacancyId)
         {
             var employer =
-                await _employerRepository.GetByUserIdAsync(userId);
+                await _employerRepository
+                    .GetByUserIdAsync(userId);
 
             if (employer == null)
             {
@@ -249,7 +300,8 @@ namespace Recruitment_Project.Services
             }
 
             var vacancy =
-                await _vacancyRepository.GetByIdAsync(vacancyId);
+                await _vacancyRepository
+                    .GetByIdAsync(vacancyId);
 
             if (vacancy == null)
             {
@@ -264,7 +316,8 @@ namespace Recruitment_Project.Services
             }
 
             var applications =
-                await _applicationRepository.GetByVacancyAsync(vacancyId);
+                await _applicationRepository
+                    .GetByVacancyAsync(vacancyId);
 
             return applications
                 .Select(x => new ApplicationDto

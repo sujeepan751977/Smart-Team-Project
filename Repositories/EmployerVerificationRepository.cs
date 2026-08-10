@@ -14,17 +14,21 @@ namespace Recruitment_Project.Repositories
             _context = context;
         }
 
-        public async Task<EmployerVerification?> GetByEmployerProfileIdAsync(int employerProfileId)
+        public async Task<EmployerVerification?> GetByEmployerProfileIdAsync(
+            int employerProfileId)
         {
             return await _context.EmployerVerifications
                 .Include(x => x.Documents)
-                .FirstOrDefaultAsync(x => x.EmployerProfileId == employerProfileId);
+                .Include(x => x.EmployerProfile)
+                .FirstOrDefaultAsync(
+                    x => x.EmployerProfileId == employerProfileId);
         }
 
         public async Task<List<EmployerVerification>> GetAllAsync()
         {
             return await _context.EmployerVerifications
                 .Include(x => x.Documents)
+                .Include(x => x.EmployerProfile)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
@@ -33,26 +37,32 @@ namespace Recruitment_Project.Repositories
         {
             return await _context.EmployerVerifications
                 .Include(x => x.Documents)
+                .Include(x => x.EmployerProfile)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public async Task DeleteDocumentAsync(int documentId)
         {
-            var document = await _context.EmployerVerificationDocuments
-                .FirstOrDefaultAsync(x => x.Id == documentId);
+            var document =
+                await _context.EmployerVerificationDocuments
+                    .FirstOrDefaultAsync(x => x.Id == documentId);
 
             if (document == null)
-                throw new Exception("Verification document not found");
+                throw new Exception(
+                    "Verification document not found");
 
             _context.EmployerVerificationDocuments.Remove(document);
         }
 
-        public async Task AddAsync(EmployerVerification verification)
+        public async Task AddAsync(
+            EmployerVerification verification)
         {
-            await _context.EmployerVerifications.AddAsync(verification);
+            await _context.EmployerVerifications
+                .AddAsync(verification);
         }
 
-        public Task UpdateAsync(EmployerVerification verification)
+        public Task UpdateAsync(
+            EmployerVerification verification)
         {
             _context.EmployerVerifications.Update(verification);
             return Task.CompletedTask;

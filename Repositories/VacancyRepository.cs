@@ -27,10 +27,12 @@ namespace Recruitment_Project.Repositories
         public async Task<Vacancy?> GetByIdAsync(int vacancyId)
         {
             return await _context.Vacancies
+                .Include(x => x.EmployerProfile)
                 .FirstOrDefaultAsync(x => x.Id == vacancyId);
         }
 
-        public async Task<List<Vacancy>> GetByStatusAsync(VacancyStatus status)
+        public async Task<List<Vacancy>> GetByStatusAsync(
+            VacancyStatus status)
         {
             return await _context.Vacancies
                 .Where(x => x.Status == status)
