@@ -1,0 +1,16 @@
+.vacancy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.onboard-banner {
+  border-left: 4px solid var(--warn);
+  background: var(--warn-bg);
+}
+
+.skill-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
