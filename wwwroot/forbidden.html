@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forbidden · SMART RECRUIT</title>
+  <link rel="stylesheet" href="/shared/common.css" />
+  <link rel="stylesheet" href="/shared/responsive.css" />
+  <link rel="stylesheet" href="/module1-core/module1.css" />
+</head>
+<body>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <div id="site-header"></div>
+  <main class="container" style="padding:3rem 1rem">
+    <div class="card" style="max-width:480px;margin:0 auto;text-align:center">
+      <h1>Forbidden</h1>
+      <p class="muted" style="margin:0.8rem 0 1.2rem">You do not have permission to view this page.</p>
+      <a class="btn btn-primary" href="/index.html">Go home</a>
+    </div>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => SR.ui.mountPublicHeader());
+  </script>
+  <script src="/shared/utils.js"></script>
+  <script src="/shared/apiClient.js"></script>
+  <script src="/shared/auth.js"></script>
+  <script src="/shared/guards.js"></script>
+  <script src="/shared/ui.js"></script>
+</body>
+</html>
