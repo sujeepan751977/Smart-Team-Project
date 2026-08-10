@@ -90,6 +90,10 @@ namespace Recruitment_Project.Data
                 .HasForeignKey(x => x.SkillId);
 
             modelBuilder.Entity<JobApplication>()
+                .Property(x => x.MatchScore)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<JobApplication>()
                 .HasOne(x => x.Vacancy)
                 .WithMany(x => x.Applications)
                 .HasForeignKey(x => x.VacancyId)

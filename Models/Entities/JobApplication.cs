@@ -11,7 +11,9 @@ namespace Recruitment_Project.Models.Entities
 
         public int JobSeekerProfileId { get; set; }
 
-        public ApplicationStatus Status { get; set; } = ApplicationStatus.Pending;
+        public ApplicationStatus Status { get; set; } = ApplicationStatus.Applied;
+
+        public decimal MatchScore { get; set; }
 
         [MaxLength(1000)]
         public string? CoverLetter { get; set; }

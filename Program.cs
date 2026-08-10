@@ -150,6 +150,33 @@ namespace Recruitment_Project
                 VerificationDocumentStorageService>();
 
             // -------------------------
+            // Member 4 - Applications
+            // -------------------------
+            builder.Services.AddScoped<
+                IApplicationRepository,
+                ApplicationRepository>();
+
+            builder.Services.AddScoped<
+                IApplicationService,
+                ApplicationService>();
+
+	    builder.Services.AddScoped<
+		IContactRequestRepository,
+    		ContactRequestRepository>();
+
+	    builder.Services.AddScoped<
+   		 IContactRequestService,
+   		 ContactRequestService>();
+
+	    builder.Services.AddScoped<
+    		IInterviewScheduleRepository,
+    		InterviewScheduleRepository>();
+
+	    builder.Services.AddScoped<
+    		IInterviewScheduleService,
+    		InterviewScheduleService>();
+
+            // -------------------------
             // Member 5 - Job Reports
             // -------------------------
             builder.Services.AddScoped<
@@ -230,17 +257,17 @@ namespace Recruitment_Project
                             new OpenApiSecurityScheme
                             {
                                 Reference =
-                                    new OpenApiReference
+                                    new Microsoft.OpenApi.Models.OpenApiReference
                                     {
                                         Type =
                                             ReferenceType.SecurityScheme,
-                                        Id = "Bearer"
+                                            Id = "Bearer"
                                     }
                             },
                             Array.Empty<string>()
                         }
                     });
-            });
+                });
 
             var app = builder.Build();
 
