@@ -43,6 +43,15 @@ namespace Recruitment_Project.Services
 
         public async Task CreateProfileAsync(int userId, UpdateEmployerProfileDto dto)
         {
+            var existing =
+                await _employerRepository.GetByUserIdAsync(userId);
+
+            if (existing != null)
+            {
+                throw new InvalidOperationException(
+                    "Employer profile already exists.");
+            }
+
             var employerProfile = new EmployerProfile
             {
                 UserId = userId,
@@ -70,7 +79,7 @@ namespace Recruitment_Project.Services
 
             if (employerProfile == null)
             {
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
             }
 
             employerProfile.CompanyName = dto.CompanyName;
@@ -96,7 +105,7 @@ namespace Recruitment_Project.Services
 
             if (employerProfile == null)
             {
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
             }
 
             return await _employerRepository.GetDashboardAsync(employerProfile.Id);

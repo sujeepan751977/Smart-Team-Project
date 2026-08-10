@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Recruitment_Project.DTOs.JobSeekers;
+using Recruitment_Project.Helpers;
 using Recruitment_Project.Interfaces.Services;
 
 namespace Recruitment_Project.Controllers
 {
     [ApiController]
     [Route("api/jobseekers")]
-    [Authorize]
+    [Authorize(Roles = RoleNames.JobSeeker)]
     public class JobSeekersController : ControllerBase
     {
         private readonly IJobSeekerService _jobSeekerService;
@@ -145,15 +146,7 @@ namespace Recruitment_Project.Controllers
 
         private int GetUserId()
         {
-            var claim = User.FindFirst(
-                System.Security.Claims.ClaimTypes.NameIdentifier);
-
-            if (claim == null)
-            {
-                throw new Exception("User id claim not found");
-            }
-
-            return int.Parse(claim.Value);
+            return User.GetUserId();
         }
     }
 }

@@ -1,10 +1,10 @@
-﻿using Recruitment_Project.DTOs.Auth;
+﻿using Microsoft.Extensions.Options;
+using Recruitment_Project.DTOs.Auth;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Models.Entities;
 using Recruitment_Project.Models.Enums;
-using System.Security.Cryptography;
-using System.Text;
+using Recruitment_Project.Options;
 
 namespace Recruitment_Project.Services
 {
@@ -13,15 +13,18 @@ namespace Recruitment_Project.Services
         private readonly IUserRepository _userRepository;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IJobSeekerRepository _jobSeekerRepository;
+        private readonly JwtOptions _jwtOptions;
 
         public AuthService(
             IUserRepository userRepository,
             IJwtTokenService jwtTokenService,
-            IJobSeekerRepository jobSeekerRepository)
+            IJobSeekerRepository jobSeekerRepository,
+            IOptions<JwtOptions> jwtOptions)
         {
             _userRepository = userRepository;
             _jwtTokenService = jwtTokenService;
             _jobSeekerRepository = jobSeekerRepository;
+            _jwtOptions = jwtOptions.Value;
         }
 
         public async Task<AuthResponseDto> RegisterJobSeekerAsync(RegisterJobSeekerDto request)
@@ -145,7 +148,8 @@ namespace Recruitment_Project.Services
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 Token = token,
-                Expiration = DateTime.UtcNow.AddMinutes(60)
+                Expiration = DateTime.UtcNow.AddMinutes(
+                    _jwtOptions.ExpirationInMinutes)
             };
         }
 
@@ -168,20 +172,11 @@ namespace Recruitment_Project.Services
             return true;
         }
 
-        public async Task<bool> ResetPasswordAsync(ResetPasswordDto request)
+        public Task<bool> ResetPasswordAsync(ResetPasswordDto request)
         {
-            var user = await _userRepository.GetByEmailAsync(request.Email.Trim().ToLower());
-
-            if (user == null)
-                return false;
-
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-            user.UpdatedAt = DateTime.UtcNow;
-
-            await _userRepository.UpdateAsync(user);
-            await _userRepository.SaveChangesAsync();
-
-            return true;
+            // Unsafe email-only reset is disabled until a verified reset token flow exists.
+            throw new InvalidOperationException(
+                "Password reset requires a verified reset token.");
         }
 
         public async Task<UserDto?> GetCurrentUserAsync(int userId)

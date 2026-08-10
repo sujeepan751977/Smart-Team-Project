@@ -61,6 +61,18 @@ namespace Recruitment_Project.Services
                     "Not your application.");
             }
 
+            if (application.Status == ApplicationStatus.Rejected)
+            {
+                throw new InvalidOperationException(
+                    "Cannot schedule an interview for a rejected application.");
+            }
+
+            if (dto.InterviewDate <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException(
+                    "Interview date must be in the future.");
+            }
+
             var interview = new InterviewSchedule
             {
                 JobApplicationId = applicationId,

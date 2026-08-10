@@ -1,6 +1,7 @@
 ﻿using Recruitment_Project.DTOs.JobSeekers;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
+using Recruitment_Project.Models.Entities;
 
 namespace Recruitment_Project.Services
 {
@@ -72,8 +73,36 @@ namespace Recruitment_Project.Services
             profile.About = dto.About;
 
 
+            var existingSkills =
+                profile.Skills.ToList();
+
+            foreach (var existingSkill in existingSkills)
+            {
+                await _repository.RemoveSkillAsync(existingSkill);
+            }
+
+            var skillNames = (dto.Skills ?? new List<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var skillName in skillNames)
+            {
+                var skill =
+                    await _repository.GetOrCreateSkillAsync(skillName);
+
+                await _repository.AddSkillAsync(new JobSeekerSkill
+                {
+                    JobSeekerProfileId = profile.Id,
+                    SkillId = skill.Id,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+
             profile.ProfileCompletionPercentage =
-                CalculateCompletion(profile);
+                CalculateCompletion(profile, skillNames.Count);
 
 
 
@@ -115,30 +144,30 @@ namespace Recruitment_Project.Services
 
 
         private int CalculateCompletion(
-            Models.Entities.JobSeekerProfile profile)
+            Models.Entities.JobSeekerProfile profile,
+            int skillCount)
         {
             int completed = 0;
 
-            int total = 5;
-
-
-            if (!string.IsNullOrEmpty(profile.ProfessionalTitle))
+            if (!string.IsNullOrWhiteSpace(profile.ProfessionalTitle))
                 completed++;
 
-            if (!string.IsNullOrEmpty(profile.Location))
+            if (!string.IsNullOrWhiteSpace(profile.Location))
                 completed++;
 
             if (profile.ExperienceInYears > 0)
                 completed++;
 
-            if (!string.IsNullOrEmpty(profile.Education))
+            if (!string.IsNullOrWhiteSpace(profile.Education))
                 completed++;
 
-            if (!string.IsNullOrEmpty(profile.About))
+            if (!string.IsNullOrWhiteSpace(profile.About))
                 completed++;
 
+            if (skillCount > 0)
+                completed++;
 
-            return (completed * 100) / total;
+            return (int)Math.Round((completed / 6.0) * 100);
         }
     }
 }

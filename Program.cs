@@ -267,7 +267,12 @@ namespace Recruitment_Project
             // -------------------------
             // Controllers
             // -------------------------
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler =
+                        System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                });
 
             // -------------------------
             // Swagger
@@ -335,6 +340,12 @@ namespace Recruitment_Project
             app.UseHttpsRedirection();
 
             // -------------------------
+            // Static frontend (wwwroot)
+            // -------------------------
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
+
+            // -------------------------
             // Authentication
             // -------------------------
             app.UseAuthentication();
@@ -353,6 +364,8 @@ namespace Recruitment_Project
             // Controllers
             // -------------------------
             app.MapControllers();
+
+            app.MapFallbackToFile("not-found.html");
 
             app.Run();
         }

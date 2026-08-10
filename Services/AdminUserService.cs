@@ -1,16 +1,21 @@
 ﻿using Recruitment_Project.DTOs.Admin;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
+using Recruitment_Project.Models.Enums;
 
 namespace Recruitment_Project.Services
 {
     public class AdminUserService : IAdminUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IEmployerRepository _employerRepository;
 
-        public AdminUserService(IUserRepository userRepository)
+        public AdminUserService(
+            IUserRepository userRepository,
+            IEmployerRepository employerRepository)
         {
             _userRepository = userRepository;
+            _employerRepository = employerRepository;
         }
 
         public async Task<AdminDashboardDto> GetDashboardAsync()
@@ -69,7 +74,26 @@ namespace Recruitment_Project.Services
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
+
+            if (user.Role == UserRole.Employer)
+            {
+                var employer =
+                    await _employerRepository.GetByUserIdAsync(user.Id);
+
+                if (employer != null)
+                {
+                    employer.AccountStatus = isActive
+                        ? EmployerAccountStatus.Active
+                        : EmployerAccountStatus.Disabled;
+
+                    employer.UpdatedAt = DateTime.UtcNow;
+
+                    await _employerRepository.UpdateAsync(employer);
+                }
+            }
+
             await _userRepository.SaveChangesAsync();
+            await _employerRepository.SaveChangesAsync();
 
             return true;
         }

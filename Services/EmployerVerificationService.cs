@@ -1,4 +1,4 @@
-﻿using Recruitment_Project.DTOs.Employers;
+using Recruitment_Project.DTOs.Employers;
 using Recruitment_Project.DTOs.EmployerVerification;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
@@ -71,7 +71,7 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employerProfile == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
             var verification =
                 await _verificationRepository.GetByEmployerProfileIdAsync(
@@ -79,27 +79,36 @@ namespace Recruitment_Project.Services
 
             if (verification == null)
             {
-                verification = new EmployerVerification
-                {
-                    EmployerProfileId = employerProfile.Id,
-                    Status = EmployerVerificationStatus.PendingReview,
-                    SubmittedAt = DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await _verificationRepository.AddAsync(verification);
+                throw new InvalidOperationException(
+                    "Upload at least one verification document before submitting.");
             }
-            else
+
+            if (verification.Status == EmployerVerificationStatus.Verified)
             {
-                verification.Status =
-                    EmployerVerificationStatus.PendingReview;
-
-                verification.SubmittedAt = DateTime.UtcNow;
-                verification.UpdatedAt = DateTime.UtcNow;
-
-                await _verificationRepository.UpdateAsync(verification);
+                throw new InvalidOperationException(
+                    "Employer is already verified.");
             }
 
+            if (verification.Status == EmployerVerificationStatus.PendingReview)
+            {
+                throw new InvalidOperationException(
+                    "Verification is already pending review.");
+            }
+
+            if (verification.Documents == null ||
+                verification.Documents.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "Upload at least one verification document before submitting.");
+            }
+
+            verification.Status =
+                EmployerVerificationStatus.PendingReview;
+
+            verification.SubmittedAt = DateTime.UtcNow;
+            verification.UpdatedAt = DateTime.UtcNow;
+
+            await _verificationRepository.UpdateAsync(verification);
             await _verificationRepository.SaveChangesAsync();
         }
 
@@ -109,19 +118,19 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employerProfile == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
             var verification =
                 await _verificationRepository.GetByEmployerProfileIdAsync(
                     employerProfile.Id);
 
             if (verification == null)
-                throw new Exception("Employer verification not found");
+                throw new KeyNotFoundException("Employer verification not found");
 
             if (verification.Status !=
                 EmployerVerificationStatus.PendingReview)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only pending verification requests can be withdrawn");
             }
 
@@ -140,21 +149,21 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employerProfile == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
             var verification =
                 await _verificationRepository.GetByEmployerProfileIdAsync(
                     employerProfile.Id);
 
             if (verification == null)
-                throw new Exception("Employer verification not found");
+                throw new KeyNotFoundException("Employer verification not found");
 
             if (verification.Status !=
                     EmployerVerificationStatus.Rejected &&
                 verification.Status !=
                     EmployerVerificationStatus.MoreInformationRequired)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only rejected or information-required verification can be resubmitted");
             }
 
@@ -174,11 +183,22 @@ namespace Recruitment_Project.Services
             int userId,
             EmployerVerificationDocumentDto document)
         {
+            throw new InvalidOperationException(
+                "Use the document upload endpoint to attach verification files.");
+        }
+
+        public async Task AddDocumentFileAsync(
+            int userId,
+            UploadEmployerVerificationDocumentDto request)
+        {
             var employerProfile =
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employerProfile == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
+
+            if (request.File == null || request.File.Length == 0)
+                throw new InvalidOperationException("Document file is required");
 
             var verification =
                 await _verificationRepository.GetByEmployerProfileIdAsync(
@@ -197,50 +217,11 @@ namespace Recruitment_Project.Services
                 await _verificationRepository.SaveChangesAsync();
             }
 
-            var newDocument = new EmployerVerificationDocument
+            if (verification.Status == EmployerVerificationStatus.Verified ||
+                verification.Status == EmployerVerificationStatus.PendingReview)
             {
-                EmployerVerificationId = verification.Id,
-                FileName = document.FileName,
-                FilePath = document.FilePath,
-                ContentType = document.ContentType,
-                Status = VerificationDocumentStatus.Pending,
-                UploadedAt = DateTime.UtcNow
-            };
-
-            verification.Documents.Add(newDocument);
-
-            await _verificationRepository.UpdateAsync(verification);
-            await _verificationRepository.SaveChangesAsync();
-        }
-
-        public async Task AddDocumentFileAsync(
-            int userId,
-            UploadEmployerVerificationDocumentDto request)
-        {
-            var employerProfile =
-                await _employerRepository.GetByUserIdAsync(userId);
-
-            if (employerProfile == null)
-                throw new Exception("Employer profile not found");
-
-            if (request.File == null || request.File.Length == 0)
-                throw new Exception("Document file is required");
-
-            var verification =
-                await _verificationRepository.GetByEmployerProfileIdAsync(
-                    employerProfile.Id);
-
-            if (verification == null)
-            {
-                verification = new EmployerVerification
-                {
-                    EmployerProfileId = employerProfile.Id,
-                    Status = EmployerVerificationStatus.Unverified,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await _verificationRepository.AddAsync(verification);
-                await _verificationRepository.SaveChangesAsync();
+                throw new InvalidOperationException(
+                    "Documents cannot be added while verification is pending or verified.");
             }
 
             await using var stream =
@@ -276,21 +257,33 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employerProfile == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
             var verification =
                 await _verificationRepository.GetByEmployerProfileIdAsync(
                     employerProfile.Id);
 
             if (verification == null)
-                throw new Exception("Employer verification not found");
+                throw new KeyNotFoundException("Employer verification not found");
+
+            if (verification.Status == EmployerVerificationStatus.Verified ||
+                verification.Status == EmployerVerificationStatus.PendingReview)
+            {
+                throw new InvalidOperationException(
+                    "Documents cannot be deleted while verification is pending or verified.");
+            }
 
             var document = verification.Documents
                 .FirstOrDefault(x => x.Id == documentId);
 
             if (document == null)
-                throw new Exception(
+                throw new KeyNotFoundException(
                     "Verification document not found");
+
+            if (!string.IsNullOrWhiteSpace(document.FilePath))
+            {
+                await _storageService.DeleteAsync(document.FilePath);
+            }
 
             await _verificationRepository.DeleteDocumentAsync(
                 documentId);
@@ -306,7 +299,7 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employerProfile == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
             employerProfile.CompanyName =
                 dto.CompanyName;

@@ -59,8 +59,7 @@ namespace Recruitment_Project.Controllers
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
-                           ?? User.FindFirst(ClaimTypes.Name);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
             if (userIdClaim == null)
                 return Unauthorized();

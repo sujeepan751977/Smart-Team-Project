@@ -148,6 +148,19 @@ namespace Recruitment_Project.Services
             await _moderationRepository
                 .UpdateUserAsync(user);
 
+            var openVacancies =
+                await _moderationRepository
+                    .GetOpenVacanciesByEmployerIdAsync(employerId);
+
+            foreach (var vacancy in openVacancies)
+            {
+                vacancy.Status = VacancyStatus.Closed;
+                vacancy.UpdatedAt = DateTime.UtcNow;
+
+                await _moderationRepository
+                    .UpdateVacancyAsync(vacancy);
+            }
+
             await CreateAuditLogAsync(
                 adminUserId,
                 ModerationActionType.DisableEmployer,
@@ -181,6 +194,13 @@ namespace Recruitment_Project.Services
             if (vacancy == null)
                 throw new KeyNotFoundException(
                     "Vacancy not found.");
+
+            if (vacancy.Status != VacancyStatus.Open &&
+                vacancy.Status != VacancyStatus.Suspended)
+            {
+                throw new InvalidOperationException(
+                    "Only open or suspended vacancies can be closed by moderation.");
+            }
 
             var previousValue = vacancy.Status.ToString();
             var newValue = VacancyStatus.Closed.ToString();

@@ -94,6 +94,10 @@ namespace Recruitment_Project.Data
                 .HasPrecision(18, 2);
 
             modelBuilder.Entity<JobApplication>()
+                .HasIndex(x => new { x.VacancyId, x.JobSeekerProfileId })
+                .IsUnique();
+
+            modelBuilder.Entity<JobApplication>()
                 .HasOne(x => x.Vacancy)
                 .WithMany(x => x.Applications)
                 .HasForeignKey(x => x.VacancyId)
@@ -104,6 +108,22 @@ namespace Recruitment_Project.Data
                 .WithMany()
                 .HasForeignKey(x => x.JobSeekerProfileId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<JobSeekerSkill>()
+                .HasIndex(x => new { x.JobSeekerProfileId, x.SkillId })
+                .IsUnique();
+
+            modelBuilder.Entity<VacancySkill>()
+                .HasIndex(x => new { x.VacancyId, x.SkillId })
+                .IsUnique();
+
+            modelBuilder.Entity<Skill>()
+                .HasIndex(x => x.Name)
+                .IsUnique();
+
+            modelBuilder.Entity<JobReport>()
+                .HasIndex(x => new { x.VacancyId, x.ReportedByUserId })
+                .IsUnique();
 
             modelBuilder.Entity<ContactRequest>()
                 .HasOne(x => x.JobApplication)

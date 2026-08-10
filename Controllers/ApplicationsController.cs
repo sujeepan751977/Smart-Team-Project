@@ -84,7 +84,7 @@ namespace Recruitment_Project.Controllers
         [HttpPut("applications/{id}/status")]
         public async Task<IActionResult> UpdateStatus(
             int id,
-            [FromBody] string status)
+            [FromBody] UpdateApplicationStatusDto request)
         {
             var userId = User.GetUserId();
 
@@ -92,7 +92,7 @@ namespace Recruitment_Project.Controllers
                 .UpdateStatusAsync(
                     userId,
                     id,
-                    status);
+                    request.Status);
 
             return Ok(new
             {

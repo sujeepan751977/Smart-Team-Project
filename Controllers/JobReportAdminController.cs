@@ -49,6 +49,15 @@ namespace Recruitment_Project.Controllers
             return Ok(report);
         }
 
+        [HttpPatch("{id}/start-review")]
+        public async Task<IActionResult> StartReview(int id)
+        {
+            await _jobReportAdminService
+                .StartReviewAsync(id);
+
+            return Ok();
+        }
+
         [HttpPatch("{id}/resolve")]
         public async Task<IActionResult> ResolveReport(int id)
         {

@@ -62,6 +62,21 @@ namespace Recruitment_Project.Services
                     "Applications are only allowed for open vacancies.");
             }
 
+            if (vacancy.ExpiryDate < DateTime.UtcNow)
+            {
+                throw new InvalidOperationException(
+                    "This vacancy has expired.");
+            }
+
+            if (vacancy.EmployerProfile.AccountStatus ==
+                    EmployerAccountStatus.Disabled ||
+                vacancy.EmployerProfile.AccountStatus ==
+                    EmployerAccountStatus.Suspended)
+            {
+                throw new InvalidOperationException(
+                    "Applications are not allowed for this employer.");
+            }
+
             var existingApplication =
                 await _applicationRepository
                     .GetByVacancyAndJobSeekerAsync(
@@ -199,16 +214,6 @@ namespace Recruitment_Project.Services
             int userId,
             int applicationId)
         {
-            var employer =
-                await _employerRepository
-                    .GetByUserIdAsync(userId);
-
-            if (employer == null)
-            {
-                throw new KeyNotFoundException(
-                    "Employer profile not found.");
-            }
-
             var application =
                 await _applicationRepository
                     .GetByIdAsync(applicationId);
@@ -218,7 +223,23 @@ namespace Recruitment_Project.Services
                 return null;
             }
 
-            if (application.Vacancy.EmployerProfileId != employer.Id)
+            var employer =
+                await _employerRepository
+                    .GetByUserIdAsync(userId);
+
+            var jobSeeker =
+                await _jobSeekerRepository
+                    .GetProfileByUserIdAsync(userId);
+
+            var isEmployerOwner =
+                employer != null &&
+                application.Vacancy.EmployerProfileId == employer.Id;
+
+            var isJobSeekerOwner =
+                jobSeeker != null &&
+                application.JobSeekerProfileId == jobSeeker.Id;
+
+            if (!isEmployerOwner && !isJobSeekerOwner)
             {
                 throw new UnauthorizedAccessException(
                     "You are not authorized to view this application.");
@@ -242,6 +263,16 @@ namespace Recruitment_Project.Services
             int applicationId,
             string status)
         {
+            var employer =
+                await _employerRepository
+                    .GetByUserIdAsync(userId);
+
+            if (employer == null)
+            {
+                throw new KeyNotFoundException(
+                    "Employer profile not found.");
+            }
+
             var application =
                 await _applicationRepository
                     .GetByIdAsync(applicationId);
@@ -252,6 +283,12 @@ namespace Recruitment_Project.Services
                     "Application not found.");
             }
 
+            if (application.Vacancy.EmployerProfileId != employer.Id)
+            {
+                throw new UnauthorizedAccessException(
+                    "You are not authorized to update this application.");
+            }
+
             if (!Enum.TryParse<ApplicationStatus>(
                 status,
                 true,
@@ -259,6 +296,12 @@ namespace Recruitment_Project.Services
             {
                 throw new InvalidOperationException(
                     "Invalid application status.");
+            }
+
+            if (!IsValidStatusTransition(application.Status, newStatus))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot change application status from {application.Status} to {newStatus}.");
             }
 
             var previousStatus = application.Status;
@@ -332,6 +375,31 @@ namespace Recruitment_Project.Services
                     UpdatedAt = x.UpdatedAt
                 })
                 .ToList();
+        }
+
+        private static bool IsValidStatusTransition(
+            ApplicationStatus current,
+            ApplicationStatus next)
+        {
+            if (current == next)
+                return true;
+
+            return current switch
+            {
+                ApplicationStatus.Applied =>
+                    next is ApplicationStatus.UnderReview
+                        or ApplicationStatus.Shortlisted
+                        or ApplicationStatus.Rejected,
+
+                ApplicationStatus.UnderReview =>
+                    next is ApplicationStatus.Shortlisted
+                        or ApplicationStatus.Rejected,
+
+                ApplicationStatus.Shortlisted =>
+                    next is ApplicationStatus.Rejected,
+
+                _ => false
+            };
         }
     }
 }

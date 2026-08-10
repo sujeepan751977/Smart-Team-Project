@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Recruitment_Project.DTOs.Common;
 using Recruitment_Project.Interfaces.Services;
 
 namespace Recruitment_Project.Controllers
@@ -46,9 +47,9 @@ namespace Recruitment_Project.Controllers
         [HttpPatch("{id}/request-information")]
         public async Task<IActionResult> RequestInformation(
             int id,
-            [FromBody] string feedback)
+            [FromBody] FeedbackRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(feedback))
+            if (string.IsNullOrWhiteSpace(request.Feedback))
             {
                 return BadRequest(new
                 {
@@ -57,7 +58,7 @@ namespace Recruitment_Project.Controllers
             }
 
             await _verificationService
-                .RequestInformationAsync(id, feedback);
+                .RequestInformationAsync(id, request.Feedback);
 
             return Ok(new
             {
@@ -81,9 +82,9 @@ namespace Recruitment_Project.Controllers
         [HttpPatch("{id}/reject")]
         public async Task<IActionResult> Reject(
             int id,
-            [FromBody] string feedback)
+            [FromBody] FeedbackRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(feedback))
+            if (string.IsNullOrWhiteSpace(request.Feedback))
             {
                 return BadRequest(new
                 {
@@ -92,7 +93,7 @@ namespace Recruitment_Project.Controllers
             }
 
             await _verificationService
-                .RejectAsync(id, feedback);
+                .RejectAsync(id, request.Feedback);
 
             return Ok(new
             {

@@ -149,6 +149,10 @@ namespace Recruitment_Project.Services
                 throw new UnauthorizedAccessException(
                     "You are not authorized to respond to this request.");
 
+            if (request.Status != ContactRequestStatus.Pending)
+                throw new InvalidOperationException(
+                    "Only pending contact requests can be responded to.");
+
             if (response.Equals(
                     "Accepted",
                     StringComparison.OrdinalIgnoreCase))

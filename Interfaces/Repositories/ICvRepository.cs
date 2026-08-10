@@ -8,6 +8,10 @@ namespace Recruitment_Project.Interfaces.Repositories
 
         Task<CvDocument?> GetByUserIdAsync(int userId);
 
+        Task<List<CvDocument>> GetAllByUserIdAsync(int userId);
+
+        Task DeleteAsync(CvDocument cvDocument);
+
         Task SaveChangesAsync();
     }
 }

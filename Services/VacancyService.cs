@@ -1,4 +1,4 @@
-﻿using Recruitment_Project.DTOs.Jobs;
+using Recruitment_Project.DTOs.Jobs;
 using Recruitment_Project.DTOs.Vacancies;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
@@ -33,7 +33,7 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employer == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
             var vacancies =
                 await _vacancyRepository
@@ -55,7 +55,7 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employer == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
             var vacancy =
                 await _vacancyRepository.GetByIdAsync(vacancyId);
@@ -77,19 +77,24 @@ namespace Recruitment_Project.Services
             int userId,
             CreateVacancyDto dto)
         {
-            Console.WriteLine("TOKEN USER ID = " + userId);
 
             var employer =
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employer == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
-            if (employer.AccountStatus ==
-                EmployerAccountStatus.Suspended)
+            if (employer.AccountStatus == EmployerAccountStatus.Suspended ||
+                employer.AccountStatus == EmployerAccountStatus.Disabled)
             {
-                throw new Exception(
-                    "Suspended employers cannot create vacancies");
+                throw new InvalidOperationException(
+                    "Suspended or disabled employers cannot create vacancies");
+            }
+
+            if (dto.ExpiryDate <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException(
+                    "Vacancy expiry date must be in the future.");
             }
 
             var vacancy = new Vacancy
@@ -111,6 +116,8 @@ namespace Recruitment_Project.Services
             await _vacancyRepository.AddAsync(vacancy);
             await _vacancyRepository.SaveChangesAsync();
 
+            await SyncRequiredSkillsAsync(vacancy, dto.RequiredSkills);
+
             return vacancy.Id;
         }
 
@@ -127,13 +134,13 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employer == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
-            if (employer.AccountStatus ==
-                EmployerAccountStatus.Suspended)
+            if (employer.AccountStatus == EmployerAccountStatus.Suspended ||
+                employer.AccountStatus == EmployerAccountStatus.Disabled)
             {
-                throw new Exception(
-                    "Suspended employers cannot update vacancies");
+                throw new InvalidOperationException(
+                    "Suspended or disabled employers cannot update vacancies");
             }
 
             var vacancy =
@@ -142,14 +149,20 @@ namespace Recruitment_Project.Services
             if (vacancy == null ||
                 vacancy.EmployerProfileId != employer.Id)
             {
-                throw new Exception("Vacancy not found");
+                throw new KeyNotFoundException("Vacancy not found");
             }
 
             if (vacancy.Status != VacancyStatus.Draft &&
                 vacancy.Status != VacancyStatus.Rejected)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only draft or rejected vacancies can be updated");
+            }
+
+            if (dto.ExpiryDate <= DateTime.UtcNow)
+            {
+                throw new InvalidOperationException(
+                    "Vacancy expiry date must be in the future.");
             }
 
             vacancy.Title = dto.Title;
@@ -164,6 +177,7 @@ namespace Recruitment_Project.Services
             vacancy.UpdatedAt = DateTime.UtcNow;
 
             await _vacancyRepository.UpdateAsync(vacancy);
+            await SyncRequiredSkillsAsync(vacancy, dto.RequiredSkills);
             await _vacancyRepository.SaveChangesAsync();
         }
 
@@ -179,13 +193,13 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employer == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
-            if (employer.AccountStatus ==
-                EmployerAccountStatus.Suspended)
+            if (employer.AccountStatus == EmployerAccountStatus.Suspended ||
+                employer.AccountStatus == EmployerAccountStatus.Disabled)
             {
-                throw new Exception(
-                    "Suspended employers cannot submit vacancies");
+                throw new InvalidOperationException(
+                    "Suspended or disabled employers cannot submit vacancies");
             }
 
             var vacancy =
@@ -194,13 +208,13 @@ namespace Recruitment_Project.Services
             if (vacancy == null ||
                 vacancy.EmployerProfileId != employer.Id)
             {
-                throw new Exception("Vacancy not found");
+                throw new KeyNotFoundException("Vacancy not found");
             }
 
             if (vacancy.Status != VacancyStatus.Draft &&
                 vacancy.Status != VacancyStatus.Rejected)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only draft or rejected vacancies can be submitted");
             }
 
@@ -236,13 +250,13 @@ namespace Recruitment_Project.Services
                 await _employerRepository.GetByUserIdAsync(userId);
 
             if (employer == null)
-                throw new Exception("Employer profile not found");
+                throw new KeyNotFoundException("Employer profile not found");
 
-            if (employer.AccountStatus ==
-                EmployerAccountStatus.Suspended)
+            if (employer.AccountStatus == EmployerAccountStatus.Suspended ||
+                employer.AccountStatus == EmployerAccountStatus.Disabled)
             {
-                throw new Exception(
-                    "Suspended employers cannot close vacancies");
+                throw new InvalidOperationException(
+                    "Suspended or disabled employers cannot close vacancies");
             }
 
             var vacancy =
@@ -251,12 +265,12 @@ namespace Recruitment_Project.Services
             if (vacancy == null ||
                 vacancy.EmployerProfileId != employer.Id)
             {
-                throw new Exception("Vacancy not found");
+                throw new KeyNotFoundException("Vacancy not found");
             }
 
             if (vacancy.Status != VacancyStatus.Open)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only open vacancies can be closed");
             }
 
@@ -270,6 +284,41 @@ namespace Recruitment_Project.Services
         // ---------------------------------------------------------
         // Mapping
         // ---------------------------------------------------------
+        private async Task SyncRequiredSkillsAsync(
+            Vacancy vacancy,
+            List<string>? skillNames)
+        {
+            var existing = vacancy.RequiredSkills?.ToList()
+                ?? new List<VacancySkill>();
+
+            foreach (var link in existing)
+            {
+                await _vacancyRepository.RemoveVacancySkillAsync(link);
+            }
+
+            var names = (skillNames ?? new List<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var name in names)
+            {
+                var skill =
+                    await _vacancyRepository.GetOrCreateSkillAsync(name);
+
+                await _vacancyRepository.AddVacancySkillAsync(
+                    new VacancySkill
+                    {
+                        VacancyId = vacancy.Id,
+                        SkillId = skill.Id,
+                        CreatedAt = DateTime.UtcNow
+                    });
+            }
+
+            await _vacancyRepository.SaveChangesAsync();
+        }
+
         private static EmployerVacancyDto MapToDto(
             Vacancy vacancy)
         {
@@ -284,6 +333,11 @@ namespace Recruitment_Project.Services
                 SalaryRange = vacancy.SalaryRange,
                 Description = vacancy.Description,
                 Requirements = vacancy.Requirements,
+                RequiredSkills = vacancy.RequiredSkills?
+                    .Where(x => x.Skill != null)
+                    .Select(x => x.Skill.Name)
+                    .ToList()
+                    ?? new List<string>(),
                 ExpiryDate = vacancy.ExpiryDate,
                 Status = vacancy.Status,
                 CreatedAt = vacancy.CreatedAt,

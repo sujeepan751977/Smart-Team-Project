@@ -27,7 +27,7 @@ namespace Recruitment_Project.Middleware
 
                     if (user == null || !user.IsActive)
                     {
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
 
                         await context.Response.WriteAsJsonAsync(new
                         {

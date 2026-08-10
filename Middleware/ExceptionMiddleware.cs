@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace Recruitment_Project.Middleware
 {
@@ -26,36 +27,80 @@ namespace Recruitment_Project.Middleware
             {
                 _logger.LogWarning(ex, ex.Message);
 
-                context.Response.ContentType = "application/json";
-                context.Response.StatusCode =
-                    (int)HttpStatusCode.BadRequest;
+                await WriteErrorAsync(
+                    context,
+                    HttpStatusCode.BadRequest,
+                    ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, ex.Message);
 
-                var response = new
-                {
-                    Success = false,
-                    Message = ex.Message
-                };
+                // Ownership failures are Forbidden; claim/auth failures are Unauthorized.
+                var status =
+                    ex.Message.Contains("claim", StringComparison.OrdinalIgnoreCase)
+                        ? HttpStatusCode.Unauthorized
+                        : HttpStatusCode.Forbidden;
 
-                await context.Response.WriteAsync(
-                    JsonSerializer.Serialize(response));
+                await WriteErrorAsync(
+                    context,
+                    status,
+                    ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, ex.Message);
+
+                await WriteErrorAsync(
+                    context,
+                    HttpStatusCode.NotFound,
+                    ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, ex.Message);
+
+                await WriteErrorAsync(
+                    context,
+                    HttpStatusCode.BadRequest,
+                    ex.Message);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogWarning(ex, ex.Message);
+
+                await WriteErrorAsync(
+                    context,
+                    HttpStatusCode.Conflict,
+                    "The request conflicts with existing data.");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message);
 
-                context.Response.ContentType = "application/json";
-                context.Response.StatusCode =
-                    (int)HttpStatusCode.InternalServerError;
-
-                var response = new
-                {
-                    Success = false,
-                    Message = "An unexpected error occurred."
-                };
-
-                await context.Response.WriteAsync(
-                    JsonSerializer.Serialize(response));
+                await WriteErrorAsync(
+                    context,
+                    HttpStatusCode.InternalServerError,
+                    "An unexpected error occurred.");
             }
+        }
+
+        private static async Task WriteErrorAsync(
+            HttpContext context,
+            HttpStatusCode statusCode,
+            string message)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)statusCode;
+
+            var response = new
+            {
+                Success = false,
+                Message = message
+            };
+
+            await context.Response.WriteAsync(
+                JsonSerializer.Serialize(response));
         }
     }
 }
