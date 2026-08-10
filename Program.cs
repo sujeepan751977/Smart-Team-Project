@@ -302,13 +302,11 @@ namespace Recruitment_Project
                         {
                             new OpenApiSecurityScheme
                             {
-                                Reference =
-                                    new OpenApiReference
-                                    {
-                                        Type =
-                                            ReferenceType.SecurityScheme,
-                                        Id = "Bearer"
-                                    }
+                                Name = "Authorization",
+                                Type = SecuritySchemeType.Http,
+                                Scheme = "bearer",
+                                BearerFormat = "JWT",
+                                In = ParameterLocation.Header
                             },
                             Array.Empty<string>()
                         }
