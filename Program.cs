@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Recruitment_Project.Caching;
 using Recruitment_Project.Data;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
+using Recruitment_Project.Middleware;
 using Recruitment_Project.Options;
 using Recruitment_Project.Repositories;
 using Recruitment_Project.Services;
-using Recruitment_Project.Middleware;
 using System.Text;
 
 namespace Recruitment_Project
@@ -24,13 +25,24 @@ namespace Recruitment_Project
             // -------------------------
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
-                    builder.Configuration.GetConnectionString("DefaultConnection")));
+                    builder.Configuration.GetConnectionString(
+                        "DefaultConnection")));
+
+            // -------------------------
+            // Caching
+            // -------------------------
+            builder.Services.AddMemoryCache();
+
+            builder.Services.Configure<CacheOptions>(
+                builder.Configuration.GetSection(
+                    CacheOptions.SectionName));
 
             // -------------------------
             // JWT Options
             // -------------------------
             builder.Services.Configure<JwtOptions>(
-                builder.Configuration.GetSection(JwtOptions.SectionName));
+                builder.Configuration.GetSection(
+                    JwtOptions.SectionName));
 
             var jwtOptions = builder.Configuration
                 .GetSection(JwtOptions.SectionName)
@@ -39,22 +51,27 @@ namespace Recruitment_Project
             // -------------------------
             // Authentication
             // -------------------------
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            builder.Services
+                .AddAuthentication(
+                    JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
+                    options.TokenValidationParameters =
+                        new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
 
-                        ValidIssuer = jwtOptions.Issuer,
-                        ValidAudience = jwtOptions.Audience,
+                            ValidIssuer = jwtOptions.Issuer,
+                            ValidAudience = jwtOptions.Audience,
 
-                        IssuerSigningKey = new SymmetricSecurityKey(
-                            Encoding.UTF8.GetBytes(jwtOptions.SecretKey))
-                    };
+                            IssuerSigningKey =
+                                new SymmetricSecurityKey(
+                                    Encoding.UTF8.GetBytes(
+                                        jwtOptions.SecretKey))
+                        };
                 });
 
             // -------------------------
@@ -66,8 +83,19 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
 
+            // -------------------------
+            // Caching
+            // -------------------------
+            builder.Services.AddScoped<
+                ICacheService,
+                CacheService>();
+
+            // -------------------------
             // User
-            builder.Services.AddScoped<IUserRepository, UserRepository>();
+            // -------------------------
+            builder.Services.AddScoped<
+                IUserRepository,
+                UserRepository>();
 
             // -------------------------
             // Member 1 - Job Seeker
@@ -138,6 +166,33 @@ namespace Recruitment_Project
             builder.Services.AddScoped<
                 IVerificationDocumentStorageService,
                 VerificationDocumentStorageService>();
+
+            // -------------------------
+            // Member 4 - Applications
+            // -------------------------
+            builder.Services.AddScoped<
+                IApplicationRepository,
+                ApplicationRepository>();
+
+            builder.Services.AddScoped<
+                IApplicationService,
+                ApplicationService>();
+
+            builder.Services.AddScoped<
+                IContactRequestRepository,
+                ContactRequestRepository>();
+
+            builder.Services.AddScoped<
+                IContactRequestService,
+                ContactRequestService>();
+
+            builder.Services.AddScoped<
+                IInterviewScheduleRepository,
+                InterviewScheduleRepository>();
+
+            builder.Services.AddScoped<
+                IInterviewScheduleService,
+                InterviewScheduleService>();
 
             // -------------------------
             // Member 5 - Job Reports
@@ -221,36 +276,43 @@ namespace Recruitment_Project
 
             builder.Services.AddSwaggerGen(options =>
             {
-                options.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "Recruitment API",
-                    Version = "v1"
-                });
-
-                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                {
-                    Description = "Enter JWT Token only",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Scheme = "bearer",
-                    BearerFormat = "JWT"
-                });
-
-                options.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                options.SwaggerDoc(
+                    "v1",
+                    new OpenApiInfo
                     {
-                        new OpenApiSecurityScheme
+                        Title = "Recruitment API",
+                        Version = "v1"
+                    });
+
+                options.AddSecurityDefinition(
+                    "Bearer",
+                    new OpenApiSecurityScheme
+                    {
+                        Description = "Enter JWT Token only",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT"
+                    });
+
+                options.AddSecurityRequirement(
+                    new OpenApiSecurityRequirement
+                    {
                         {
-                            Reference = new OpenApiReference
+                            new OpenApiSecurityScheme
                             {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
+                                Reference =
+                                    new OpenApiReference
+                                    {
+                                        Type =
+                                            ReferenceType.SecurityScheme,
+                                        Id = "Bearer"
+                                    }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
             });
 
             var app = builder.Build();

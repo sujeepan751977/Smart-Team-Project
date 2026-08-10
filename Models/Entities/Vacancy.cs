@@ -38,6 +38,9 @@ namespace Recruitment_Project.Models.Entities
 
         public VacancyStatus Status { get; set; } = VacancyStatus.PendingApproval;
 
+        [MaxLength(1000)]
+        public string? AdministratorRejectionReason { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedAt { get; set; }

@@ -2,10 +2,11 @@
 {
     public enum VacancyStatus
     {
-        PendingApproval = 1,
-        Approved = 2,
-        Rejected = 3,
-        Closed = 4,
-        Expired = 5
+        Draft = 1,
+        PendingApproval = 2,
+        Open = 3,
+        Rejected = 4,
+        Closed = 5,
+        Suspended = 6
     }
 }

@@ -9,7 +9,12 @@ namespace Recruitment_Project.Models.Entities
 
         public int JobApplicationId { get; set; }
 
+        [MaxLength(200)]
+        public string Title { get; set; } = string.Empty;
+
         public DateTime InterviewDate { get; set; }
+
+        public int DurationMinutes { get; set; }
 
         [MaxLength(200)]
         public string Location { get; set; } = string.Empty;
@@ -18,7 +23,7 @@ namespace Recruitment_Project.Models.Entities
         public string MeetingLink { get; set; } = string.Empty;
 
         [MaxLength(1000)]
-        public string Notes { get; set; } = string.Empty;
+        public string Instructions { get; set; } = string.Empty;
 
         public InterviewStatus Status { get; set; } = InterviewStatus.Scheduled;
 

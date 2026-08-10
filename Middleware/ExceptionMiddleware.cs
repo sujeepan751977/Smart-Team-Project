@@ -6,7 +6,7 @@ namespace Recruitment_Project.Middleware
     public class ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly ILogger<ExceptionMiddleware> _logger;
+        private readonly ILogger _logger;
 
         public ExceptionMiddleware(
             RequestDelegate next,
@@ -22,12 +22,30 @@ namespace Recruitment_Project.Middleware
             {
                 await _next(context);
             }
+            catch (ValidationException ex)
+            {
+                _logger.LogWarning(ex, ex.Message);
+
+                context.Response.ContentType = "application/json";
+                context.Response.StatusCode =
+                    (int)HttpStatusCode.BadRequest;
+
+                var response = new
+                {
+                    Success = false,
+                    Message = ex.Message
+                };
+
+                await context.Response.WriteAsync(
+                    JsonSerializer.Serialize(response));
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message);
 
                 context.Response.ContentType = "application/json";
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                context.Response.StatusCode =
+                    (int)HttpStatusCode.InternalServerError;
 
                 var response = new
                 {
