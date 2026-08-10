@@ -43,6 +43,7 @@ namespace Recruitment_Project.Repositories
             int vacancyId)
         {
             return await _context.Vacancies
+                .Include(x => x.EmployerProfile)
                 .FirstOrDefaultAsync(x => x.Id == vacancyId);
         }
 
