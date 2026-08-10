@@ -1,0 +1,8 @@
+.notif-unread {
+  border-left: 4px solid var(--blue);
+  background: #f8fbff;
+}
+
+.moderation-box {
+  margin-top: 1rem;
+}
