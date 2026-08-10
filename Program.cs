@@ -1,10 +1,8 @@
-using System.Text;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
+using Recruitment_Project.Caching;
 using Recruitment_Project.Data;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
@@ -13,6 +11,7 @@ using Recruitment_Project.Models.Entities;
 using Recruitment_Project.Options;
 using Recruitment_Project.Repositories;
 using Recruitment_Project.Services;
+using System.Text;
 
 namespace Recruitment_Project
 {
@@ -30,12 +29,14 @@ namespace Recruitment_Project
                     builder.Configuration.GetConnectionString(
                         "DefaultConnection")));
 
+            builder.Services.AddMemoryCache();
+
             // -------------------------
             // JWT Options
             // -------------------------
-            builder.Services.Configure<JwtOptions>(
-                builder.Configuration.GetSection(
-                    JwtOptions.SectionName));
+            builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+
+            builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection(CacheOptions.SectionName));
 
             var jwtOptions = builder.Configuration
                 .GetSection(JwtOptions.SectionName)
@@ -76,8 +77,11 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
 
+            builder.Services.AddScoped<ICacheService, CacheService>();
+
             // User
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            
 
             // -------------------------
             // Member 1 - Job Seeker
@@ -241,8 +245,7 @@ namespace Recruitment_Project
                     "Bearer",
                     new OpenApiSecurityScheme
                     {
-                        Description =
-                            "Enter JWT Token only",
+                        Description = "Enter JWT Token only",
                         Name = "Authorization",
                         In = ParameterLocation.Header,
                         Type = SecuritySchemeType.Http,
@@ -251,22 +254,21 @@ namespace Recruitment_Project
                     });
 
                 options.AddSecurityRequirement(
-                    new OpenApiSecurityRequirement
-                    {
+                new OpenApiSecurityRequirement
+                {
+                     {
+                new OpenApiSecurityScheme
+                {
+                    Reference =
+                        new Microsoft.OpenApi.Models.OpenApiReference
                         {
-                            new OpenApiSecurityScheme
-                            {
-                                Reference =
-                                    new Microsoft.OpenApi.Models.OpenApiReference
-                                    {
-                                        Type =
-                                            ReferenceType.SecurityScheme,
-                                            Id = "Bearer"
-                                    }
-                            },
-                            Array.Empty<string>()
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
                         }
-                    });
+                },
+                Array.Empty<string>()
+                 }
+                });
                 });
 
             var app = builder.Build();
