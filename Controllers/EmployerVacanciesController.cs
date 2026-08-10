@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Recruitment_Project.DTOs.Jobs;
+using Recruitment_Project.Helpers;
 using Recruitment_Project.Interfaces.Services;
 
 namespace Recruitment_Project.Controllers
 {
     [ApiController]
     [Route("api/employer/vacancies")]
-    [Authorize]
+    [Authorize(Roles = RoleNames.Employer)]
     public class EmployerVacanciesController : ControllerBase
     {
         private readonly IVacancyService _vacancyService;

@@ -8,11 +8,17 @@ namespace Recruitment_Project.Services
     public class JobReportService : IJobReportService
     {
         private readonly IJobReportRepository _jobReportRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly INotificationService _notificationService;
 
         public JobReportService(
-            IJobReportRepository jobReportRepository)
+            IJobReportRepository jobReportRepository,
+            IUserRepository userRepository,
+            INotificationService notificationService)
         {
             _jobReportRepository = jobReportRepository;
+            _userRepository = userRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<JobReport> CreateReportAsync(
@@ -26,7 +32,8 @@ namespace Recruitment_Project.Services
 
             if (exists)
             {
-                throw new Exception("You have already reported this job.");
+                throw new Exception(
+                    "You have already reported this job.");
             }
 
             var report = new JobReport
@@ -42,9 +49,29 @@ namespace Recruitment_Project.Services
             await _jobReportRepository.AddAsync(report);
             await _jobReportRepository.SaveChangesAsync();
 
+            var users = await _userRepository.GetAllUsersAsync();
+
+            var administrators = users
+                .Where(x =>
+                    x.Role == UserRole.Administrator &&
+                    x.IsActive)
+                .ToList();
+
+            foreach (var administrator in administrators)
+            {
+                await _notificationService.CreateAsync(
+                    new Notification
+                    {
+                        UserId = administrator.Id,
+                        Type = NotificationType.JobReport,
+                        Title = "New Job Report",
+                        Message =
+                            $"A new job report has been submitted for vacancy {vacancyId}."
+                    });
+            }
+
             return report;
         }
-
 
         public async Task<IEnumerable<JobReport>> GetMyReportsAsync(
             int userId)
@@ -52,7 +79,6 @@ namespace Recruitment_Project.Services
             return await _jobReportRepository
                 .GetByUserIdAsync(userId);
         }
-
 
         public async Task<JobReport?> GetReportByIdAsync(
             int id,

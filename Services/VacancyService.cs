@@ -77,6 +77,8 @@ namespace Recruitment_Project.Services
             int userId,
             CreateVacancyDto dto)
         {
+            Console.WriteLine("TOKEN USER ID = " + userId);
+
             var employer =
                 await _employerRepository.GetByUserIdAsync(userId);
 

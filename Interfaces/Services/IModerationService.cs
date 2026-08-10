@@ -3,18 +3,22 @@
     public interface IModerationService
     {
         Task WarnEmployerAsync(
-    int employerId,
-    string decisionNote);
+            int adminUserId,
+            int employerId,
+            string decisionNote);
 
         Task SuspendEmployerAsync(
+            int adminUserId,
             int employerId,
             string decisionNote);
 
         Task DisableEmployerAsync(
+            int adminUserId,
             int employerId,
             string decisionNote);
 
         Task CloseVacancyAsync(
+            int adminUserId,
             int vacancyId,
             string decisionNote);
     }
