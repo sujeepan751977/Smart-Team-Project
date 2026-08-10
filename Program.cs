@@ -154,6 +154,33 @@ namespace Recruitment_Project
                 VerificationDocumentStorageService>();
 
             // -------------------------
+            // Member 4 - Applications
+            // -------------------------
+            builder.Services.AddScoped<
+                IApplicationRepository,
+                ApplicationRepository>();
+
+            builder.Services.AddScoped<
+                IApplicationService,
+                ApplicationService>();
+
+	    builder.Services.AddScoped<
+		IContactRequestRepository,
+    		ContactRequestRepository>();
+
+	    builder.Services.AddScoped<
+   		 IContactRequestService,
+   		 ContactRequestService>();
+
+	    builder.Services.AddScoped<
+    		IInterviewScheduleRepository,
+    		InterviewScheduleRepository>();
+
+	    builder.Services.AddScoped<
+    		IInterviewScheduleService,
+    		InterviewScheduleService>();
+
+            // -------------------------
             // Member 5 - Job Reports
             // -------------------------
             builder.Services.AddScoped<
@@ -227,21 +254,22 @@ namespace Recruitment_Project
                     });
 
                 options.AddSecurityRequirement(
-                    new OpenApiSecurityRequirement
-                    {
+                new OpenApiSecurityRequirement
+                {
+                     {
+                new OpenApiSecurityScheme
+                {
+                    Reference =
+                        new Microsoft.OpenApi.Models.OpenApiReference
                         {
-                            new OpenApiSecurityScheme
-                            {
-                                Name = "Authorization",
-                                Type = SecuritySchemeType.Http,
-                                Scheme = "bearer",
-                                BearerFormat = "JWT",
-                                In = ParameterLocation.Header
-                            },
-                            Array.Empty<string>()
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
                         }
-                    });
-            });
+                },
+                Array.Empty<string>()
+                 }
+                });
+                });
 
             var app = builder.Build();
 
