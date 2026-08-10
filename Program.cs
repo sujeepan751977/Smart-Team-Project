@@ -8,8 +8,8 @@ using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Options;
 using Recruitment_Project.Repositories;
 using Recruitment_Project.Services;
-using System.Text;
 using Recruitment_Project.Middleware;
+using System.Text;
 
 namespace Recruitment_Project
 {
@@ -65,32 +65,149 @@ namespace Recruitment_Project
             // -------------------------
             // Dependency Injection
             // -------------------------
+
+            // User
             builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-            // Notifications
-            builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-            builder.Services.AddScoped<INotificationService, NotificationService>();
-
+            // -------------------------
             // Member 1 - Job Seeker
-            builder.Services.AddScoped<IJobSeekerRepository, JobSeekerRepository>();
-            builder.Services.AddScoped<IJobSearchRepository, JobSearchRepository>();
-            builder.Services.AddScoped<ICvRepository, CvRepository>();
+            // -------------------------
+            builder.Services.AddScoped<
+                IJobSeekerRepository,
+                JobSeekerRepository>();
 
+            builder.Services.AddScoped<
+                IJobSearchRepository,
+                JobSearchRepository>();
+
+            builder.Services.AddScoped<
+                ICvRepository,
+                CvRepository>();
+
+            builder.Services.AddScoped<
+                IJobSeekerService,
+                JobSeekerService>();
+
+            builder.Services.AddScoped<
+                IMatchingService,
+                MatchingService>();
+
+            builder.Services.AddScoped<
+                ICvFileStorageService,
+                CvFileStorageService>();
+
+            builder.Services.AddScoped<
+                IJobSearchService,
+                JobSearchService>();
+
+            // -------------------------
+            // Member 3 - Employer
+            // -------------------------
+            builder.Services.AddScoped<
+                IEmployerRepository,
+                EmployerRepository>();
+
+            builder.Services.AddScoped<
+                IEmployerVerificationRepository,
+                EmployerVerificationRepository>();
+
+            builder.Services.AddScoped<
+                IVacancyRepository,
+                VacancyRepository>();
+
+            builder.Services.AddScoped<
+                IEmployerService,
+                EmployerService>();
+
+            builder.Services.AddScoped<
+                IEmployerVerificationService,
+                EmployerVerificationService>();
+
+            builder.Services.AddScoped<
+                IEmployerVerificationAdminService,
+                EmployerVerificationAdminService>();
+
+            builder.Services.AddScoped<
+                IVacancyService,
+                VacancyService>();
+
+            builder.Services.AddScoped<
+                IVacancyApprovalService,
+                VacancyApprovalService>();
+
+            builder.Services.AddScoped<
+                IVerificationDocumentStorageService,
+                VerificationDocumentStorageService>();
+
+            // -------------------------
             // Member 5 - Job Reports
-            builder.Services.AddScoped<IJobReportRepository, JobReportRepository>();
-            builder.Services.AddScoped<IJobReportService, JobReportService>();
-            builder.Services.AddScoped<IJobReportAdminService, JobReportAdminService>();
+            // -------------------------
+            builder.Services.AddScoped<
+                IJobReportRepository,
+                JobReportRepository>();
 
+            builder.Services.AddScoped<
+                IJobReportService,
+                JobReportService>();
+
+            builder.Services.AddScoped<
+                IJobReportAdminService,
+                JobReportAdminService>();
+
+            // -------------------------
+            // Member 5 - Moderation
+            // -------------------------
+            builder.Services.AddScoped<
+                IModerationRepository,
+                ModerationRepository>();
+
+            builder.Services.AddScoped<
+                IModerationService,
+                ModerationService>();
+
+            // -------------------------
+            // Member 5 - Moderation Audit
+            // -------------------------
+            builder.Services.AddScoped<
+                IModerationAuditRepository,
+                ModerationAuditRepository>();
+
+            builder.Services.AddScoped<
+                IModerationAuditService,
+                ModerationAuditService>();
+
+            // -------------------------
+            // Member 5 - Job Trust Card
+            // -------------------------
+            builder.Services.AddScoped<
+                IJobTrustService,
+                JobTrustService>();
+
+            // -------------------------
+            // Notifications
+            // -------------------------
+            builder.Services.AddScoped<
+                INotificationRepository,
+                NotificationRepository>();
+
+            builder.Services.AddScoped<
+                INotificationService,
+                NotificationService>();
+
+            // -------------------------
             // Authentication / Admin
-            builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IAdminUserService, AdminUserService>();
-            builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+            // -------------------------
+            builder.Services.AddScoped<
+                IAuthService,
+                AuthService>();
 
-            // Member 1 - Services
-            builder.Services.AddScoped<IJobSeekerService, JobSeekerService>();
-            builder.Services.AddScoped<IMatchingService, MatchingService>();
-            builder.Services.AddScoped<ICvFileStorageService, CvFileStorageService>();
-            builder.Services.AddScoped<IJobSearchService, JobSearchService>();
+            builder.Services.AddScoped<
+                IAdminUserService,
+                AdminUserService>();
+
+            builder.Services.AddScoped<
+                IJwtTokenService,
+                JwtTokenService>();
 
             // -------------------------
             // Controllers
@@ -125,7 +242,7 @@ namespace Recruitment_Project
                     {
                         new OpenApiSecurityScheme
                         {
-                            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            Reference = new OpenApiReference
                             {
                                 Type = ReferenceType.SecurityScheme,
                                 Id = "Bearer"
@@ -144,7 +261,7 @@ namespace Recruitment_Project
             app.UseMiddleware<ExceptionMiddleware>();
 
             // -------------------------
-            // Middleware
+            // Swagger
             // -------------------------
             if (app.Environment.IsDevelopment())
             {
@@ -152,14 +269,29 @@ namespace Recruitment_Project
                 app.UseSwaggerUI();
             }
 
+            // -------------------------
+            // HTTPS
+            // -------------------------
             app.UseHttpsRedirection();
 
+            // -------------------------
+            // Authentication
+            // -------------------------
             app.UseAuthentication();
 
+            // -------------------------
+            // Active Account Middleware
+            // -------------------------
             app.UseMiddleware<ActiveAccountMiddleware>();
 
+            // -------------------------
+            // Authorization
+            // -------------------------
             app.UseAuthorization();
 
+            // -------------------------
+            // Controllers
+            // -------------------------
             app.MapControllers();
 
             app.Run();
