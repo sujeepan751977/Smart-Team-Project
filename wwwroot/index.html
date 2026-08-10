@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMART RECRUIT — Find opportunities that match your skills</title>
+  <link rel="stylesheet" href="/shared/common.css" />
+  <link rel="stylesheet" href="/shared/responsive.css" />
+  <link rel="stylesheet" href="/module1-core/module1.css" />
+</head>
+<body>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <div id="site-header"></div>
+
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">SMART RECRUIT</p>
+        <h1>Find the right opportunity for your skills.</h1>
+        <p class="hero-copy">Build your profile, discover trusted employers, and apply with clear match insight — all in one professional platform.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/module2-jobseeker/jobs.html">Search Jobs</a>
+          <a class="btn btn-outline" href="/register.html">Create Profile</a>
+          <a class="btn btn-outline" href="#employers">For Employers</a>
+        </div>
+      </div>
+      <form class="card hero-search" id="landing-search" action="/module2-jobseeker/jobs.html" method="get">
+        <h2>Quick job search</h2>
+        <label class="field">Keyword<input name="search" placeholder="Role, skill, or keyword" /></label>
+        <label class="field">Location<input name="location" placeholder="City or region" /></label>
+        <button class="btn btn-primary btn-block" type="submit">Find Jobs</button>
+        <p class="muted" style="margin-top:0.75rem;font-size:0.85rem">Browse open roles freely. Sign in as a Job Seeker to apply and see your match score.</p>
+      </form>
+    </div>
+  </section>
+
+  <section class="section" id="why">
+    <div class="container">
+      <h2>Why Smart Recruit</h2>
+      <p class="lead">A clear path from profile to interview — without noise.</p>
+      <div class="grid-4">
+        <div class="card"><h3>Skill-based matching</h3><p class="muted" style="margin-top:0.5rem">Deterministic match scores from your profile skills, experience, education and location.</p></div>
+        <div class="card"><h3>Trusted employers</h3><p class="muted" style="margin-top:0.5rem">Company verification and trust labels help you evaluate listings with confidence.</p></div>
+        <div class="card"><h3>Application tracking</h3><p class="muted" style="margin-top:0.5rem">Follow every application status from Applied to Shortlisted in one place.</p></div>
+        <div class="card"><h3>Interview management</h3><p class="muted" style="margin-top:0.5rem">See schedules, meeting links and instructions when employers invite you.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how" style="background:#fff;border-block:1px solid var(--line)">
+    <div class="container">
+      <h2>How it works</h2>
+      <p class="lead">Five simple steps to get started.</p>
+      <div class="grid-3">
+        <div class="card"><strong>1.</strong> Create your profile</div>
+        <div class="card"><strong>2.</strong> Add skills and CV</div>
+        <div class="card"><strong>3.</strong> Discover open jobs</div>
+        <div class="card"><strong>4.</strong> Check your match</div>
+        <div class="card"><strong>5.</strong> Apply with confidence</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="trust">
+    <div class="container grid-2">
+      <div>
+        <h2>Trust &amp; safety</h2>
+        <p class="lead">Report suspicious listings. Administrators review reports and can take moderation action when needed.</p>
+        <p class="muted">Trust labels help you evaluate a listing but are not a guarantee.</p>
+      </div>
+      <div class="card trust-card">
+        <h3>What we check</h3>
+        <ul class="muted" style="margin:0.75rem 0 0;padding-left:1.1rem;line-height:1.7">
+          <li>Employer verification status</li>
+          <li>Vacancy approval workflow</li>
+          <li>Active account status</li>
+          <li>Job report review process</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="employers" style="background:#fff;border-top:1px solid var(--line)">
+    <div class="container" style="text-align:center;max-width:720px">
+      <h2>Hiring with Smart Recruit</h2>
+      <p class="lead" style="margin-left:auto;margin-right:auto">Verify your company, publish vacancies, review applicants by match score, and schedule interviews.</p>
+      <a class="btn btn-navy" href="/register.html">Create Employer Account</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="logo" style="margin-bottom:0.75rem"><span class="logo-mark">SR</span> SMART RECRUIT</div>
+        <p>Find opportunities that match your skills.</p>
+      </div>
+      <div>
+        <h4 style="color:#fff;margin-bottom:0.6rem">Product</h4>
+        <p><a href="/module2-jobseeker/jobs.html">Find Jobs</a></p>
+        <p><a href="/register.html">Create Account</a></p>
+      </div>
+      <div>
+        <h4 style="color:#fff;margin-bottom:0.6rem">Account</h4>
+        <p><a href="/login.html">Login</a></p>
+        <p><a href="/index.html#how">How it works</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/shared/utils.js"></script>
+  <script src="/shared/apiClient.js"></script>
+  <script src="/shared/auth.js"></script>
+  <script src="/shared/guards.js"></script>
+  <script src="/shared/ui.js"></script>
+  <script src="/module1-core/module1.js"></script>
+</body>
+</html>
