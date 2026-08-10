@@ -20,6 +20,12 @@ namespace Recruitment_Project.Models.Entities
         [MaxLength(1000)]
         public string? Reason { get; set; }
 
+        [MaxLength(100)]
+        public string? PreviousValue { get; set; }
+
+        [MaxLength(100)]
+        public string? NewValue { get; set; }
+
         public DateTime ActionDate { get; set; } = DateTime.UtcNow;
 
         // Navigation Property

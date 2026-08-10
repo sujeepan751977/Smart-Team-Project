@@ -8,17 +8,17 @@ namespace Recruitment_Project.Services
     {
         private readonly IJobSearchRepository _repository;
         private readonly IMatchingService _matchingService;
-
+        private readonly IJobTrustService _jobTrustService;
 
         public JobSearchService(
             IJobSearchRepository repository,
-            IMatchingService matchingService)
+            IMatchingService matchingService,
+            IJobTrustService jobTrustService)
         {
             _repository = repository;
             _matchingService = matchingService;
+            _jobTrustService = jobTrustService;
         }
-
-
 
         public async Task<List<VacancyListDto>> SearchJobsAsync(
             JobSearchRequestDto request)
@@ -33,14 +33,13 @@ namespace Recruitment_Project.Services
                     request.PageNumber,
                     request.PageSize);
 
-
-
             return vacancies.Select(x =>
                 new VacancyListDto
                 {
                     Id = x.Id,
 
-                    JobTitle = x.Title,
+                    JobTitle =
+                        x.Title,
 
                     CompanyName =
                         x.EmployerProfile.CompanyName,
@@ -65,8 +64,6 @@ namespace Recruitment_Project.Services
                 .ToList();
         }
 
-
-
         public async Task<JobSeekerVacancyDetailsDto?> GetJobDetailsAsync(
             int jobId,
             int userId)
@@ -74,11 +71,8 @@ namespace Recruitment_Project.Services
             var vacancy =
                 await _repository.GetJobDetailsAsync(jobId);
 
-
             if (vacancy == null)
                 return null;
-
-
 
             var match =
                 await _matchingService
@@ -86,7 +80,9 @@ namespace Recruitment_Project.Services
                     userId,
                     jobId);
 
-
+            var trustLabel =
+                await _jobTrustService
+                .GetTrustLabelAsync(jobId);
 
             return new JobSeekerVacancyDetailsDto
             {
@@ -127,7 +123,10 @@ namespace Recruitment_Project.Services
                 MissingSkills =
                     match.MissingSkills,
 
-                CanApply = true
+                CanApply = true,
+
+                TrustLabel =
+                    trustLabel
             };
         }
     }

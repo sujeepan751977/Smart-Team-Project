@@ -29,5 +29,7 @@ namespace Recruitment_Project.DTOs.Jobs
         public List<string> MissingSkills { get; set; } = new();
 
         public bool CanApply { get; set; }
+
+        public string TrustLabel { get; set; } = string.Empty;
     }
 }

@@ -7,7 +7,6 @@ using Recruitment_Project.Data;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Middleware;
-using Recruitment_Project.Models.Entities;
 using Recruitment_Project.Options;
 using Recruitment_Project.Repositories;
 using Recruitment_Project.Services;
@@ -29,14 +28,21 @@ namespace Recruitment_Project
                     builder.Configuration.GetConnectionString(
                         "DefaultConnection")));
 
+            // -------------------------
+            // Caching
+            // -------------------------
             builder.Services.AddMemoryCache();
+
+            builder.Services.Configure<CacheOptions>(
+                builder.Configuration.GetSection(
+                    CacheOptions.SectionName));
 
             // -------------------------
             // JWT Options
             // -------------------------
-            builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
-
-            builder.Services.Configure<CacheOptions>(builder.Configuration.GetSection(CacheOptions.SectionName));
+            builder.Services.Configure<JwtOptions>(
+                builder.Configuration.GetSection(
+                    JwtOptions.SectionName));
 
             var jwtOptions = builder.Configuration
                 .GetSection(JwtOptions.SectionName)
@@ -77,11 +83,19 @@ namespace Recruitment_Project
             // Dependency Injection
             // -------------------------
 
-            builder.Services.AddScoped<ICacheService, CacheService>();
+            // -------------------------
+            // Caching
+            // -------------------------
+            builder.Services.AddScoped<
+                ICacheService,
+                CacheService>();
 
+            // -------------------------
             // User
-            builder.Services.AddScoped<IUserRepository, UserRepository>();
-            
+            // -------------------------
+            builder.Services.AddScoped<
+                IUserRepository,
+                UserRepository>();
 
             // -------------------------
             // Member 1 - Job Seeker
@@ -164,21 +178,21 @@ namespace Recruitment_Project
                 IApplicationService,
                 ApplicationService>();
 
-	    builder.Services.AddScoped<
-		IContactRequestRepository,
-    		ContactRequestRepository>();
+            builder.Services.AddScoped<
+                IContactRequestRepository,
+                ContactRequestRepository>();
 
-	    builder.Services.AddScoped<
-   		 IContactRequestService,
-   		 ContactRequestService>();
+            builder.Services.AddScoped<
+                IContactRequestService,
+                ContactRequestService>();
 
-	    builder.Services.AddScoped<
-    		IInterviewScheduleRepository,
-    		InterviewScheduleRepository>();
+            builder.Services.AddScoped<
+                IInterviewScheduleRepository,
+                InterviewScheduleRepository>();
 
-	    builder.Services.AddScoped<
-    		IInterviewScheduleService,
-    		InterviewScheduleService>();
+            builder.Services.AddScoped<
+                IInterviewScheduleService,
+                InterviewScheduleService>();
 
             // -------------------------
             // Member 5 - Job Reports
@@ -194,6 +208,35 @@ namespace Recruitment_Project
             builder.Services.AddScoped<
                 IJobReportAdminService,
                 JobReportAdminService>();
+
+            // -------------------------
+            // Member 5 - Moderation
+            // -------------------------
+            builder.Services.AddScoped<
+                IModerationRepository,
+                ModerationRepository>();
+
+            builder.Services.AddScoped<
+                IModerationService,
+                ModerationService>();
+
+            // -------------------------
+            // Member 5 - Moderation Audit
+            // -------------------------
+            builder.Services.AddScoped<
+                IModerationAuditRepository,
+                ModerationAuditRepository>();
+
+            builder.Services.AddScoped<
+                IModerationAuditService,
+                ModerationAuditService>();
+
+            // -------------------------
+            // Member 5 - Job Trust Card
+            // -------------------------
+            builder.Services.AddScoped<
+                IJobTrustService,
+                JobTrustService>();
 
             // -------------------------
             // Notifications
@@ -254,22 +297,23 @@ namespace Recruitment_Project
                     });
 
                 options.AddSecurityRequirement(
-                new OpenApiSecurityRequirement
-                {
-                     {
-                new OpenApiSecurityScheme
-                {
-                    Reference =
-                        new Microsoft.OpenApi.Models.OpenApiReference
+                    new OpenApiSecurityRequirement
+                    {
                         {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
+                            new OpenApiSecurityScheme
+                            {
+                                Reference =
+                                    new OpenApiReference
+                                    {
+                                        Type =
+                                            ReferenceType.SecurityScheme,
+                                        Id = "Bearer"
+                                    }
+                            },
+                            Array.Empty<string>()
                         }
-                },
-                Array.Empty<string>()
-                 }
-                });
-                });
+                    });
+            });
 
             var app = builder.Build();
 

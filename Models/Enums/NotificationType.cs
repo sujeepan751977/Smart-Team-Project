@@ -8,6 +8,7 @@
         EmployerVerification = 4,
         VacancyApproval = 5,
         ContactRequest = 6,
-        JobReport = 7
+        JobReport = 7,
+        Moderation = 8
     }
 }
