@@ -59,7 +59,11 @@ namespace Recruitment_Project.Services
 
             double skillsScore = 0;
 
-            if (jobSkills.Count > 0)
+            if (jobSkills.Count == 0)
+            {
+                skillsScore = 60;
+            }
+            else
             {
                 skillsScore =
                     ((double)matchedSkills.Count / jobSkills.Count) * 60;
@@ -84,7 +88,11 @@ namespace Recruitment_Project.Services
 
             double locationScore = 0;
 
-            if (profile.Location == vacancy.WorkLocation)
+            if (!string.IsNullOrWhiteSpace(profile.Location) &&
+                string.Equals(
+                    profile.Location.Trim(),
+                    vacancy.WorkLocation.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
             {
                 locationScore = 10;
             }

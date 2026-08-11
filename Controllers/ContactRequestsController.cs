@@ -75,14 +75,14 @@ namespace Recruitment_Project.Controllers
         [HttpPatch("jobseekers/me/contact-requests/{id}/response")]
         public async Task<IActionResult> Respond(
             int id,
-            [FromBody] string response)
+            [FromBody] RespondContactRequestDto request)
         {
             var userId = User.GetUserId();
 
             await _service.RespondAsync(
                 userId,
                 id,
-                response);
+                request.Response);
 
             return Ok(new
             {

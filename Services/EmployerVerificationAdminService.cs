@@ -1,4 +1,4 @@
-﻿using Recruitment_Project.DTOs.EmployerVerification;
+using Recruitment_Project.DTOs.EmployerVerification;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Models.Entities;
@@ -50,13 +50,12 @@ namespace Recruitment_Project.Services
                 await _verificationRepository.GetByIdAsync(id);
 
             if (verification == null)
-                throw new Exception(
-                    "Employer verification not found");
+                throw new KeyNotFoundException("Employer verification not found");
 
             if (verification.Status !=
                 EmployerVerificationStatus.PendingReview)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only pending verifications can request information");
             }
 
@@ -99,13 +98,12 @@ namespace Recruitment_Project.Services
                 await _verificationRepository.GetByIdAsync(id);
 
             if (verification == null)
-                throw new Exception(
-                    "Employer verification not found");
+                throw new KeyNotFoundException("Employer verification not found");
 
             if (verification.Status !=
                 EmployerVerificationStatus.PendingReview)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only pending verifications can be verified");
             }
 
@@ -148,13 +146,12 @@ namespace Recruitment_Project.Services
                 await _verificationRepository.GetByIdAsync(id);
 
             if (verification == null)
-                throw new Exception(
-                    "Employer verification not found");
+                throw new KeyNotFoundException("Employer verification not found");
 
             if (verification.Status !=
                 EmployerVerificationStatus.PendingReview)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only pending verifications can be rejected");
             }
 

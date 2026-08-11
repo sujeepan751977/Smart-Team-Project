@@ -2,17 +2,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Recruitment_Project.DTOs.Jobs;
 using Recruitment_Project.Interfaces.Services;
+using System.Security.Claims;
 
 namespace Recruitment_Project.Controllers
 {
     [ApiController]
     [Route("api/jobs")]
-    [Authorize]
     public class JobsController : ControllerBase
     {
         private readonly IJobSearchService _jobSearchService;
-
-
 
         public JobsController(
             IJobSearchService jobSearchService)
@@ -20,9 +18,8 @@ namespace Recruitment_Project.Controllers
             _jobSearchService = jobSearchService;
         }
 
-
-
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> SearchJobs(
             [FromQuery] JobSearchRequestDto request)
         {
@@ -30,18 +27,15 @@ namespace Recruitment_Project.Controllers
                 await _jobSearchService
                 .SearchJobsAsync(request);
 
-
             return Ok(result);
         }
 
-
-
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetJobDetails(
             int id)
         {
-            var userId = GetUserId();
-
+            var userId = TryGetUserId();
 
             var result =
                 await _jobSearchService
@@ -49,28 +43,22 @@ namespace Recruitment_Project.Controllers
                     id,
                     userId);
 
-
             if (result == null)
                 return NotFound();
-
 
             return Ok(result);
         }
 
-
-
-        private int GetUserId()
+        private int? TryGetUserId()
         {
-            var claim = User.FindFirst(
-                System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (User.Identity?.IsAuthenticated != true)
+                return null;
 
-            if (claim == null)
-            {
-                throw new Exception("User id claim not found");
-            }
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (claim == null || !int.TryParse(claim.Value, out var userId))
+                return null;
 
-            return int.Parse(claim.Value);
+            return userId;
         }
     }
-    
 }

@@ -1,14 +1,20 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using Recruitment_Project.Options;
 
 namespace Recruitment_Project.Caching
 {
     public class CacheService : ICacheService
     {
         private readonly IMemoryCache _memoryCache;
+        private readonly CacheOptions _cacheOptions;
 
-        public CacheService(IMemoryCache memoryCache)
+        public CacheService(
+            IMemoryCache memoryCache,
+            IOptions<CacheOptions> cacheOptions)
         {
             _memoryCache = memoryCache;
+            _cacheOptions = cacheOptions.Value;
         }
 
         public T? Get<T>(string key)
@@ -23,12 +29,15 @@ namespace Recruitment_Project.Caching
             T value,
             TimeSpan? expiration = null)
         {
-            var options = new MemoryCacheEntryOptions();
-
-            if (expiration.HasValue)
+            var options = new MemoryCacheEntryOptions
             {
-                options.AbsoluteExpirationRelativeToNow = expiration.Value;
-            }
+                AbsoluteExpirationRelativeToNow =
+                    expiration ??
+                    TimeSpan.FromMinutes(
+                        _cacheOptions.DefaultExpirationMinutes > 0
+                            ? _cacheOptions.DefaultExpirationMinutes
+                            : 10)
+            };
 
             _memoryCache.Set(key, value, options);
         }

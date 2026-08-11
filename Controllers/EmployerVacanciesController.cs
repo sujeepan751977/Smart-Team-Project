@@ -120,15 +120,7 @@ namespace Recruitment_Project.Controllers
 
         private int GetUserId()
         {
-            var claim = User.FindFirst(
-                System.Security.Claims.ClaimTypes.NameIdentifier);
-
-            if (claim == null)
-            {
-                throw new Exception("User id claim not found");
-            }
-
-            return int.Parse(claim.Value);
+            return User.GetUserId();
         }
     }
 }

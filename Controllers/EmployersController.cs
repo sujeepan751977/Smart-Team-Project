@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Recruitment_Project.DTOs.Employers;
+using Recruitment_Project.Helpers;
 using Recruitment_Project.Interfaces.Services;
 
 namespace Recruitment_Project.Controllers
 {
     [Route("api/employers")]
     [ApiController]
+    [Authorize(Roles = RoleNames.Employer)]
     public class EmployersController : ControllerBase
     {
         private readonly IEmployerService _employerService;
@@ -18,8 +21,7 @@ namespace Recruitment_Project.Controllers
         [HttpGet("me/profile")]
         public async Task<IActionResult> GetMyProfile()
         {
-            var userId = int.Parse(
-             User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var userId = User.GetUserId();
 
             var profile = await _employerService.GetProfileAsync(userId);
 
@@ -35,8 +37,7 @@ namespace Recruitment_Project.Controllers
         public async Task<IActionResult> CreateMyProfile(
     [FromBody] UpdateEmployerProfileDto dto)
         {
-            var userId = int.Parse(
-                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var userId = User.GetUserId();
 
             await _employerService.CreateProfileAsync(userId, dto);
 
@@ -51,8 +52,7 @@ namespace Recruitment_Project.Controllers
         public async Task<IActionResult> UpdateMyProfile(
     [FromBody] UpdateEmployerProfileDto dto)
         {
-            var userId = int.Parse(
-                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var userId = User.GetUserId();
 
             await _employerService.UpdateProfileAsync(userId, dto);
 
@@ -66,8 +66,7 @@ namespace Recruitment_Project.Controllers
         [HttpGet("me/dashboard")]
         public async Task<IActionResult> GetMyDashboard()
         {
-            var userId = int.Parse(
-                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var userId = User.GetUserId();
 
             var dashboard = await _employerService.GetDashboardAsync(userId);
 

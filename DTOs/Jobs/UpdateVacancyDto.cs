@@ -30,6 +30,8 @@ namespace Recruitment_Project.DTOs.Jobs
         [MaxLength(2000)]
         public string Requirements { get; set; } = string.Empty;
 
+        public List<string> RequiredSkills { get; set; } = new();
+
         public DateTime ExpiryDate { get; set; }
     }
 }

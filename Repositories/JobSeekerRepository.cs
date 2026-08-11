@@ -53,6 +53,30 @@ namespace Recruitment_Project.Repositories
         }
 
 
+        public async Task<Skill> GetOrCreateSkillAsync(string skillName)
+        {
+            var normalized = skillName.Trim();
+
+            var existing = await _context.Skills
+                .FirstOrDefaultAsync(x =>
+                    x.Name.ToLower() == normalized.ToLower());
+
+            if (existing != null)
+                return existing;
+
+            var skill = new Skill
+            {
+                Name = normalized,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Skills.AddAsync(skill);
+            await _context.SaveChangesAsync();
+
+            return skill;
+        }
+
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

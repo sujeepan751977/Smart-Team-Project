@@ -10,6 +10,6 @@ namespace Recruitment_Project.Interfaces.Services
 
         Task<JobSeekerVacancyDetailsDto?> GetJobDetailsAsync(
             int jobId,
-            int userId);
+            int? userId);
     }
 }

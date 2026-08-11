@@ -81,8 +81,7 @@ namespace Recruitment_Project.Controllers
 
         private int? GetUserId()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)
-                        ?? User.FindFirst(ClaimTypes.Name);
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
 
             if (claim == null)
                 return null;

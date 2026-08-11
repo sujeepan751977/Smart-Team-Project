@@ -63,7 +63,7 @@ namespace Recruitment_Project.Services
 
             if (profile == null)
             {
-                throw new Exception("Job seeker profile not found");
+                throw new KeyNotFoundException("Job seeker profile not found");
             }
 
 
@@ -137,6 +137,22 @@ namespace Recruitment_Project.Services
         {
             ValidateFile(file);
 
+            var existingDocuments =
+                await _cvRepository.GetAllByUserIdAsync(userId);
+
+            foreach (var existing in existingDocuments)
+            {
+                if (!string.IsNullOrWhiteSpace(existing.FilePath) &&
+                    File.Exists(existing.FilePath))
+                {
+                    File.Delete(existing.FilePath);
+                }
+
+                await _cvRepository.DeleteAsync(existing);
+            }
+
+            await _cvRepository.SaveChangesAsync();
+
             await UploadCvAsync(userId, file);
 
             return true;
@@ -148,7 +164,7 @@ namespace Recruitment_Project.Services
         {
             if (file == null)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "CV file is required");
             }
 
@@ -170,7 +186,7 @@ namespace Recruitment_Project.Services
 
             if (!allowedExtensions.Contains(extension))
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only PDF, DOC, DOCX files allowed");
             }
 
@@ -178,7 +194,7 @@ namespace Recruitment_Project.Services
 
             if (file.Length > 5 * 1024 * 1024)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Maximum file size is 5MB");
             }
         }

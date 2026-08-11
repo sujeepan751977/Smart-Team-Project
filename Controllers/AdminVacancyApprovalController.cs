@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Recruitment_Project.DTOs.Common;
 using Recruitment_Project.Interfaces.Services;
 
 namespace Recruitment_Project.Controllers
@@ -43,9 +44,9 @@ namespace Recruitment_Project.Controllers
         [HttpPost("{id}/reject")]
         public async Task<IActionResult> RejectVacancy(
             int id,
-            [FromBody] string reason)
+            [FromBody] ReasonRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(reason))
+            if (string.IsNullOrWhiteSpace(request.Reason))
             {
                 return BadRequest(new
                 {
@@ -54,7 +55,7 @@ namespace Recruitment_Project.Controllers
             }
 
             await _vacancyApprovalService
-                .RejectVacancyAsync(id, reason);
+                .RejectVacancyAsync(id, request.Reason);
 
             return Ok(new
             {

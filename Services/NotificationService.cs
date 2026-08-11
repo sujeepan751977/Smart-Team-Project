@@ -28,7 +28,7 @@ namespace Recruitment_Project.Services
             var notification = await _notificationRepository.GetByIdAsync(notificationId);
 
             if (notification == null || notification.UserId != userId)
-                return;
+                throw new KeyNotFoundException("Notification not found.");
 
             notification.IsRead = true;
             notification.ReadAt = DateTime.UtcNow;

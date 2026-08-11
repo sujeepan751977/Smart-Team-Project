@@ -1,15 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Recruitment_Project.DTOs.JobReports;
+using Recruitment_Project.Helpers;
 using Recruitment_Project.Interfaces.Services;
-using Recruitment_Project.Models.Enums;
-using Recruitment_Project.Services;
 using System.Security.Claims;
 
 namespace Recruitment_Project.Controllers
 {
     [ApiController]
     [Route("api/jobs/{vacancyId}/reports")]
-    [Authorize]
+    [Authorize(Roles = RoleNames.JobSeeker)]
     public class JobReportsController : ControllerBase
     {
         private readonly IJobReportService _jobReportService;
@@ -24,8 +24,7 @@ namespace Recruitment_Project.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateReport(
             int vacancyId,
-            JobReportReason reason,
-            string? description)
+            [FromBody] CreateJobReportDto request)
         {
             var userId = GetUserId();
 
@@ -37,8 +36,8 @@ namespace Recruitment_Project.Controllers
                 .CreateReportAsync(
                     vacancyId,
                     userId.Value,
-                    reason,
-                    description);
+                    request.Reason,
+                    request.Description);
 
 
             return Ok(result);
@@ -85,9 +84,7 @@ namespace Recruitment_Project.Controllers
 
         private int? GetUserId()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)
-                        ?? User.FindFirst(ClaimTypes.Name);
-
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
 
             if (claim == null)
                 return null;

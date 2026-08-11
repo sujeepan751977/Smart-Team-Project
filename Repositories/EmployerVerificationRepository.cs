@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Recruitment_Project.Data;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Models.Entities;
@@ -48,8 +48,7 @@ namespace Recruitment_Project.Repositories
                     .FirstOrDefaultAsync(x => x.Id == documentId);
 
             if (document == null)
-                throw new Exception(
-                    "Verification document not found");
+                throw new KeyNotFoundException("Verification document not found");
 
             _context.EmployerVerificationDocuments.Remove(document);
         }
