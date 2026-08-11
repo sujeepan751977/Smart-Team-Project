@@ -2,6 +2,7 @@
 using Recruitment_Project.Data;
 using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Models.Entities;
+using Recruitment_Project.Models.Enums;
 
 namespace Recruitment_Project.Repositories
 {
@@ -24,8 +25,20 @@ namespace Recruitment_Project.Repositories
             int pageNumber,
             int pageSize)
         {
+            if (pageNumber < 1)
+                pageNumber = 1;
+
+            if (pageSize < 1)
+                pageSize = 10;
+
+            var now = DateTime.UtcNow;
+
             var query = _context.Vacancies
-                .Where(x => x.Status.ToString() == "Open")
+                .Where(x =>
+                    x.Status == VacancyStatus.Open &&
+                    x.ExpiryDate >= now &&
+                    x.EmployerProfile.AccountStatus != EmployerAccountStatus.Disabled &&
+                    x.EmployerProfile.AccountStatus != EmployerAccountStatus.Suspended)
                 .AsQueryable();
 
 
@@ -68,6 +81,8 @@ namespace Recruitment_Project.Repositories
             return await query
                 .Include(x => x.EmployerProfile)
                 .Include(x => x.RequiredSkills)
+                    .ThenInclude(x => x.Skill)
+                .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -77,10 +92,18 @@ namespace Recruitment_Project.Repositories
 
         public async Task<Vacancy?> GetJobDetailsAsync(int id)
         {
+            var now = DateTime.UtcNow;
+
             return await _context.Vacancies
                 .Include(x => x.EmployerProfile)
                 .Include(x => x.RequiredSkills)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                    .ThenInclude(x => x.Skill)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    x.Status == VacancyStatus.Open &&
+                    x.ExpiryDate >= now &&
+                    x.EmployerProfile.AccountStatus != EmployerAccountStatus.Disabled &&
+                    x.EmployerProfile.AccountStatus != EmployerAccountStatus.Suspended);
         }
     }
 }

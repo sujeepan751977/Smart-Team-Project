@@ -1,0 +1,9 @@
+Admin
+admin.demo@smartrecruit.local
+Admin@12345
+Employer
+employer.demo@smartrecruit.local
+Employer@123
+Job Seeker
+jobseeker.demo@smartrecruit.local
+JobSeeker@123

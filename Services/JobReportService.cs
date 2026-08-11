@@ -9,15 +9,18 @@ namespace Recruitment_Project.Services
     {
         private readonly IJobReportRepository _jobReportRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IVacancyRepository _vacancyRepository;
         private readonly INotificationService _notificationService;
 
         public JobReportService(
             IJobReportRepository jobReportRepository,
             IUserRepository userRepository,
+            IVacancyRepository vacancyRepository,
             INotificationService notificationService)
         {
             _jobReportRepository = jobReportRepository;
             _userRepository = userRepository;
+            _vacancyRepository = vacancyRepository;
             _notificationService = notificationService;
         }
 
@@ -27,12 +30,25 @@ namespace Recruitment_Project.Services
             JobReportReason reason,
             string? description)
         {
+            var vacancyExists =
+                await _vacancyRepository.GetByIdAsync(vacancyId) != null;
+
+            if (!vacancyExists)
+            {
+                throw new KeyNotFoundException("Vacancy not found.");
+            }
+
+            if (!Enum.IsDefined(typeof(JobReportReason), reason))
+            {
+                throw new InvalidOperationException("Invalid report reason.");
+            }
+
             var exists = await _jobReportRepository
                 .ExistsAsync(vacancyId, userId);
 
             if (exists)
             {
-                throw new Exception(
+                throw new InvalidOperationException(
                     "You have already reported this job.");
             }
 
@@ -49,20 +65,19 @@ namespace Recruitment_Project.Services
             await _jobReportRepository.AddAsync(report);
             await _jobReportRepository.SaveChangesAsync();
 
-            var users = await _userRepository.GetAllUsersAsync();
-
-            var administrators = users
+            var administratorIds = (await _userRepository.GetAllUsersAsync())
                 .Where(x =>
                     x.Role == UserRole.Administrator &&
                     x.IsActive)
+                .Select(x => x.Id)
                 .ToList();
 
-            foreach (var administrator in administrators)
+            foreach (var administratorId in administratorIds)
             {
                 await _notificationService.CreateAsync(
                     new Notification
                     {
-                        UserId = administrator.Id,
+                        UserId = administratorId,
                         Type = NotificationType.JobReport,
                         Title = "New Job Report",
                         Message =
@@ -70,7 +85,18 @@ namespace Recruitment_Project.Services
                     });
             }
 
-            return report;
+            // Return a detached copy without navigation graphs for safe JSON output.
+            return new JobReport
+            {
+                Id = report.Id,
+                VacancyId = report.VacancyId,
+                ReportedByUserId = report.ReportedByUserId,
+                Reason = report.Reason,
+                Description = report.Description,
+                Status = report.Status,
+                ReportedAt = report.ReportedAt,
+                ReviewedAt = report.ReviewedAt
+            };
         }
 
         public async Task<IEnumerable<JobReport>> GetMyReportsAsync(

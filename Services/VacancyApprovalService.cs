@@ -1,4 +1,4 @@
-﻿using Recruitment_Project.Interfaces.Repositories;
+using Recruitment_Project.Interfaces.Repositories;
 using Recruitment_Project.Interfaces.Services;
 using Recruitment_Project.Models.Entities;
 using Recruitment_Project.Models.Enums;
@@ -30,11 +30,20 @@ namespace Recruitment_Project.Services
                 .GetByIdAsync(vacancyId);
 
             if (vacancy == null)
-                throw new Exception("Vacancy not found");
+                throw new KeyNotFoundException("Vacancy not found");
 
             if (vacancy.Status != VacancyStatus.PendingApproval)
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only pending vacancies can be approved");
+
+            if (vacancy.EmployerProfile.AccountStatus ==
+                    EmployerAccountStatus.Suspended ||
+                vacancy.EmployerProfile.AccountStatus ==
+                    EmployerAccountStatus.Disabled)
+            {
+                throw new InvalidOperationException(
+                    "Cannot approve vacancy for a suspended or disabled employer.");
+            }
 
             vacancy.Status = VacancyStatus.Open;
             vacancy.UpdatedAt = DateTime.UtcNow;
@@ -62,10 +71,10 @@ namespace Recruitment_Project.Services
                 .GetByIdAsync(vacancyId);
 
             if (vacancy == null)
-                throw new Exception("Vacancy not found");
+                throw new KeyNotFoundException("Vacancy not found");
 
             if (vacancy.Status != VacancyStatus.PendingApproval)
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Only pending vacancies can be rejected");
 
             vacancy.Status = VacancyStatus.Rejected;

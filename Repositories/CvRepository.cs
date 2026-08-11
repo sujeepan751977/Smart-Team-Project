@@ -25,7 +25,33 @@ namespace Recruitment_Project.Repositories
         {
             return await _context.CvDocuments
                 .Include(x => x.JobSeekerProfile)
-                .FirstOrDefaultAsync(x => x.JobSeekerProfile.UserId == userId);
+                .Where(x => x.JobSeekerProfile.UserId == userId)
+                .OrderByDescending(x => x.UploadedAt)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<CvDocument?> GetLatestByJobSeekerProfileIdAsync(
+            int jobSeekerProfileId)
+        {
+            return await _context.CvDocuments
+                .Where(x => x.JobSeekerProfileId == jobSeekerProfileId)
+                .OrderByDescending(x => x.UploadedAt)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<CvDocument>> GetAllByUserIdAsync(int userId)
+        {
+            return await _context.CvDocuments
+                .Include(x => x.JobSeekerProfile)
+                .Where(x => x.JobSeekerProfile.UserId == userId)
+                .ToListAsync();
+        }
+
+
+        public Task DeleteAsync(CvDocument cvDocument)
+        {
+            _context.CvDocuments.Remove(cvDocument);
+            return Task.CompletedTask;
         }
 
 

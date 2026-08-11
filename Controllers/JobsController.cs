@@ -2,17 +2,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Recruitment_Project.DTOs.Jobs;
 using Recruitment_Project.Interfaces.Services;
+using System.Security.Claims;
 
 namespace Recruitment_Project.Controllers
 {
     [ApiController]
     [Route("api/jobs")]
-    [Authorize]
     public class JobsController : ControllerBase
     {
         private readonly IJobSearchService _jobSearchService;
-
-
 
         public JobsController(
             IJobSearchService jobSearchService)
@@ -20,57 +18,53 @@ namespace Recruitment_Project.Controllers
             _jobSearchService = jobSearchService;
         }
 
-
-
         [HttpGet]
+        [AllowAnonymous]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> SearchJobs(
             [FromQuery] JobSearchRequestDto request)
         {
+            Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            Response.Headers.Pragma = "no-cache";
+
             var result =
                 await _jobSearchService
-                .SearchJobsAsync(request);
-
+                .SearchJobsAsync(request, TryGetUserId());
 
             return Ok(result);
         }
 
-
-
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetJobDetails(
             int id)
         {
-            var userId = GetUserId();
-
-
             var result =
                 await _jobSearchService
                 .GetJobDetailsAsync(
                     id,
-                    userId);
-
+                    TryGetUserId());
 
             if (result == null)
                 return NotFound();
 
-
             return Ok(result);
         }
 
-
-
-        private int GetUserId()
+        private int? TryGetUserId()
         {
-            var claim = User.FindFirst(
-                System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (User.Identity?.IsAuthenticated != true)
+                return null;
 
-            if (claim == null)
-            {
-                throw new Exception("User id claim not found");
-            }
+            var claim =
+                User.FindFirst(ClaimTypes.NameIdentifier)
+                ?? User.FindFirst("sub")
+                ?? User.FindFirst("nameid");
 
-            return int.Parse(claim.Value);
+            if (claim == null || !int.TryParse(claim.Value, out var userId))
+                return null;
+
+            return userId;
         }
     }
-    
 }

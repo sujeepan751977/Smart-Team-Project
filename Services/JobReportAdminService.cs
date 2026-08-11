@@ -41,7 +41,11 @@ namespace Recruitment_Project.Services
                 .GetByIdAsync(reportId);
 
             if (report == null)
-                return;
+                throw new KeyNotFoundException("Job report not found.");
+
+            if (report.Status != JobReportStatus.Pending)
+                throw new InvalidOperationException(
+                    "Only pending reports can be moved to under review.");
 
             report.Status = JobReportStatus.UnderReview;
             report.ReviewedAt = DateTime.UtcNow;
@@ -66,7 +70,14 @@ namespace Recruitment_Project.Services
                 .GetByIdAsync(reportId);
 
             if (report == null)
-                return;
+                throw new KeyNotFoundException("Job report not found.");
+
+            if (report.Status is JobReportStatus.ActionTaken
+                or JobReportStatus.Rejected)
+            {
+                throw new InvalidOperationException(
+                    "This report has already been closed.");
+            }
 
             report.Status = JobReportStatus.ActionTaken;
             report.ReviewedAt = DateTime.UtcNow;
@@ -91,7 +102,14 @@ namespace Recruitment_Project.Services
                 .GetByIdAsync(reportId);
 
             if (report == null)
-                return;
+                throw new KeyNotFoundException("Job report not found.");
+
+            if (report.Status is JobReportStatus.ActionTaken
+                or JobReportStatus.Rejected)
+            {
+                throw new InvalidOperationException(
+                    "This report has already been closed.");
+            }
 
             report.Status = JobReportStatus.Rejected;
             report.ReviewedAt = DateTime.UtcNow;

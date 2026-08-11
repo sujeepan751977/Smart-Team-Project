@@ -27,5 +27,9 @@ namespace Recruitment_Project.Interfaces.Services
         Task<List<ApplicationDto>> GetApplicantsByVacancyAsync(
             int userId,
             int vacancyId);
+
+        Task<(Stream FileStream, string FileName, string ContentType)> DownloadApplicantCvAsync(
+            int userId,
+            int applicationId);
     }
 }

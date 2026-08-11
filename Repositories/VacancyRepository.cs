@@ -19,6 +19,8 @@ namespace Recruitment_Project.Repositories
             int employerProfileId)
         {
             return await _context.Vacancies
+                .Include(x => x.RequiredSkills)
+                    .ThenInclude(x => x.Skill)
                 .Where(x => x.EmployerProfileId == employerProfileId)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
@@ -28,6 +30,8 @@ namespace Recruitment_Project.Repositories
         {
             return await _context.Vacancies
                 .Include(x => x.EmployerProfile)
+                .Include(x => x.RequiredSkills)
+                    .ThenInclude(x => x.Skill)
                 .FirstOrDefaultAsync(x => x.Id == vacancyId);
         }
 
@@ -49,6 +53,40 @@ namespace Recruitment_Project.Repositories
         {
             _context.Vacancies.Update(vacancy);
             return Task.CompletedTask;
+        }
+
+        public async Task AddVacancySkillAsync(VacancySkill vacancySkill)
+        {
+            await _context.VacancySkills.AddAsync(vacancySkill);
+        }
+
+        public Task RemoveVacancySkillAsync(VacancySkill vacancySkill)
+        {
+            _context.VacancySkills.Remove(vacancySkill);
+            return Task.CompletedTask;
+        }
+
+        public async Task<Skill> GetOrCreateSkillAsync(string skillName)
+        {
+            var normalized = skillName.Trim();
+
+            var existing = await _context.Skills
+                .FirstOrDefaultAsync(x =>
+                    x.Name.ToLower() == normalized.ToLower());
+
+            if (existing != null)
+                return existing;
+
+            var skill = new Skill
+            {
+                Name = normalized,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Skills.AddAsync(skill);
+            await _context.SaveChangesAsync();
+
+            return skill;
         }
 
         public async Task SaveChangesAsync()

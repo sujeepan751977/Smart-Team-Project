@@ -1,0 +1,142 @@
+/* Find Jobs: title stays put; only the job cards column scrolls */
+.main:has(.jobs-layout) #page-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.jobs-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.filters-panel {
+  align-self: start;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.jobs-results-pane {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-right: 0.15rem;
+}
+
+.jobs-results-pane .pagination {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--color-background);
+  padding: 0.5rem 0;
+}
+
+@media (max-width: 980px) {
+  .main:has(.jobs-layout) #page-body {
+    overflow-y: auto;
+  }
+
+  .jobs-layout {
+    grid-template-columns: 1fr;
+    overflow: visible;
+    flex: none;
+  }
+
+  .filters-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .jobs-results-pane {
+    overflow: visible;
+  }
+
+  .jobs-results-pane .pagination {
+    position: static;
+  }
+}
+
+.match-panel .score {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--navy);
+}
+
+.skill-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.welcome-banner {
+  background: linear-gradient(120deg, var(--color-secondary, var(--navy)), var(--color-primary, #1d4ed8));
+  color: #fff;
+  border: 0;
+}
+
+.welcome-banner h1,
+.welcome-banner p {
+  color: #fff;
+}
+
+.welcome-banner .muted {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.welcome-banner .btn-outline {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+.welcome-banner .btn-primary {
+  background: #fff;
+  color: var(--color-secondary, var(--navy));
+}
+
+.ring-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ring {
+  --p: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: conic-gradient(var(--blue) calc(var(--p) * 1%), #e2e8f0 0);
+  display: grid;
+  place-items: center;
+}
+
+.dash-stat .ring {
+  width: 56px;
+  height: 56px;
+}
+
+.ring::before {
+  content: attr(data-label);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--navy);
+}
+
+.dash-stat .ring::before {
+  width: 42px;
+  height: 42px;
+  font-size: 0.75rem;
+}

@@ -335,6 +335,7 @@ namespace Recruitment_Project.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("MatchScore")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Status")
@@ -350,7 +351,8 @@ namespace Recruitment_Project.Migrations
 
                     b.HasIndex("JobSeekerProfileId");
 
-                    b.HasIndex("VacancyId");
+                    b.HasIndex("VacancyId", "JobSeekerProfileId")
+                        .IsUnique();
 
                     b.ToTable("JobApplications");
                 });
@@ -389,7 +391,8 @@ namespace Recruitment_Project.Migrations
 
                     b.HasIndex("ReportedByUserId");
 
-                    b.HasIndex("VacancyId");
+                    b.HasIndex("VacancyId", "ReportedByUserId")
+                        .IsUnique();
 
                     b.ToTable("JobReports");
                 });
@@ -464,9 +467,10 @@ namespace Recruitment_Project.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("JobSeekerProfileId");
-
                     b.HasIndex("SkillId");
+
+                    b.HasIndex("JobSeekerProfileId", "SkillId")
+                        .IsUnique();
 
                     b.ToTable("JobSeekerSkills");
                 });
@@ -572,6 +576,9 @@ namespace Recruitment_Project.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Skills");
                 });
@@ -711,7 +718,8 @@ namespace Recruitment_Project.Migrations
 
                     b.HasIndex("SkillId");
 
-                    b.HasIndex("VacancyId");
+                    b.HasIndex("VacancyId", "SkillId")
+                        .IsUnique();
 
                     b.ToTable("VacancySkills");
                 });

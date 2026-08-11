@@ -16,6 +16,8 @@ namespace Recruitment_Project.Interfaces.Repositories
 
         Task<bool> SkillExistsAsync(int jobSeekerProfileId, string skillName);
 
+        Task<Skill> GetOrCreateSkillAsync(string skillName);
+
         Task SaveChangesAsync();
     }
 }

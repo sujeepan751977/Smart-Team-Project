@@ -15,6 +15,12 @@ namespace Recruitment_Project.Interfaces.Repositories
 
         Task UpdateAsync(Vacancy vacancy);
 
+        Task AddVacancySkillAsync(VacancySkill vacancySkill);
+
+        Task RemoveVacancySkillAsync(VacancySkill vacancySkill);
+
+        Task<Skill> GetOrCreateSkillAsync(string skillName);
+
         Task SaveChangesAsync();
     }
 }

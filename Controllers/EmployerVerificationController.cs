@@ -31,7 +31,10 @@ namespace Recruitment_Project.Controllers
 
             if (verification == null)
             {
-                return NotFound("Employer verification not found");
+                return NotFound(new
+                {
+                    Message = "Employer profile not found."
+                });
             }
 
             return Ok(verification);

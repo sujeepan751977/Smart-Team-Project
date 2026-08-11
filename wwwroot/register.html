@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account · SMART RECRUIT</title>
+  <link rel="stylesheet" href="/shared/common.css" />
+  <link rel="stylesheet" href="/shared/responsive.css" />
+  <link rel="stylesheet" href="/module1-core/module1.css" />
+</head>
+<body>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <div class="auth-split">
+    <aside class="auth-brand">
+      <a class="logo" href="/index.html">
+        <span class="logo-mark">SR</span>
+        <span class="logo-text">
+          <span class="logo-text-main">SMART RECRUIT</span>
+          <span class="logo-text-sub">Hiring platform</span>
+        </span>
+      </a>
+      <h1>Join Smart Recruit</h1>
+      <p>Create an account to apply for roles or hire talent with a clear, trusted workflow.</p>
+    </aside>
+    <main class="auth-panel">
+      <div class="card auth-card auth-card-register">
+        <h2>Create account</h2>
+        <p class="muted auth-lead">Job Seeker is recommended if you are looking for roles.</p>
+        <div class="tabs" id="role-tabs">
+          <button type="button" class="active" data-role="JobSeeker">Job Seeker</button>
+          <button type="button" data-role="Employer">Employer</button>
+        </div>
+        <div id="register-alert" class="alert error" hidden></div>
+        <form id="register-form" class="form-grid">
+          <label class="field">
+            <span class="field-label">Full name <span class="req" aria-hidden="true">*</span></span>
+            <input name="fullName" required maxlength="100" />
+          </label>
+          <label class="field">
+            <span class="field-label">Email <span class="req" aria-hidden="true">*</span></span>
+            <input name="email" type="email" required autocomplete="username" />
+          </label>
+          <label class="field">
+            <span class="field-label">Password <span class="req" aria-hidden="true">*</span> <span class="hint">min 8 characters</span></span>
+            <input name="password" type="password" required minlength="8" autocomplete="new-password" />
+          </label>
+          <label class="field">
+            <span class="field-label">Confirm password <span class="req" aria-hidden="true">*</span></span>
+            <input name="confirmPassword" type="password" required minlength="8" autocomplete="new-password" />
+          </label>
+          <button class="btn btn-primary btn-block" type="submit">Create account</button>
+        </form>
+        <p class="muted auth-footer">Already registered? <a href="/login.html">Sign in</a></p>
+      </div>
+    </main>
+  </div>
+  <script src="/shared/utils.js"></script>
+  <script src="/shared/apiClient.js"></script>
+  <script src="/shared/auth.js"></script>
+  <script src="/shared/guards.js"></script>
+  <script src="/shared/ui.js"></script>
+  <script src="/module1-core/module1.js"></script>
+</body>
+</html>
