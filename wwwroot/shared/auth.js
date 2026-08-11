@@ -8,6 +8,7 @@ SR.auth = (function () {
   };
 
   function getToken() {
+    if (!isLoggedIn()) return null;
     return localStorage.getItem(KEYS.token);
   }
 
@@ -19,6 +20,11 @@ SR.auth = (function () {
     }
   }
 
+  function setUser(user) {
+    localStorage.setItem(KEYS.user, JSON.stringify(user));
+    return user;
+  }
+
   function setSession(result) {
     const token = result.token || result.Token;
     const user = {
@@ -26,9 +32,10 @@ SR.auth = (function () {
       fullName: result.fullName || result.FullName,
       email: result.email || result.Email,
       role: result.role || result.Role,
+      isActive: result.isActive ?? result.IsActive ?? true,
     };
     localStorage.setItem(KEYS.token, token || "");
-    localStorage.setItem(KEYS.user, JSON.stringify(user));
+    setUser(user);
     localStorage.setItem(
       KEYS.expiration,
       String(result.expiration || result.Expiration || "")
@@ -43,7 +50,17 @@ SR.auth = (function () {
   }
 
   function isLoggedIn() {
-    return !!getToken();
+    const token = localStorage.getItem(KEYS.token);
+    if (!token) return false;
+    const expRaw = localStorage.getItem(KEYS.expiration);
+    if (expRaw) {
+      const exp = new Date(expRaw);
+      if (!Number.isNaN(exp.getTime()) && exp.getTime() <= Date.now()) {
+        clear();
+        return false;
+      }
+    }
+    return true;
   }
 
   function homeForRole(role) {
@@ -89,8 +106,10 @@ SR.auth = (function () {
   }
 
   return {
+    KEYS,
     getToken,
     getUser,
+    setUser,
     setSession,
     clear,
     isLoggedIn,

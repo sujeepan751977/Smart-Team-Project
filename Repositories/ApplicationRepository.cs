@@ -21,6 +21,8 @@ namespace Recruitment_Project.Repositories
                     .ThenInclude(x => x.EmployerProfile)
                 .Include(x => x.JobSeekerProfile)
                     .ThenInclude(x => x.User)
+                .Include(x => x.JobSeekerProfile)
+                    .ThenInclude(x => x.CvDocuments)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
@@ -50,6 +52,9 @@ namespace Recruitment_Project.Repositories
             return await _context.JobApplications
                 .Include(x => x.Vacancy)
                 .Include(x => x.JobSeekerProfile)
+                    .ThenInclude(x => x.User)
+                .Include(x => x.JobSeekerProfile)
+                    .ThenInclude(x => x.CvDocuments)
                 .Where(x => x.Vacancy.EmployerProfileId == employerProfileId)
                 .OrderByDescending(x => x.AppliedAt)
                 .ToListAsync();
@@ -60,6 +65,9 @@ namespace Recruitment_Project.Repositories
         {
             return await _context.JobApplications
                 .Include(x => x.JobSeekerProfile)
+                    .ThenInclude(x => x.User)
+                .Include(x => x.JobSeekerProfile)
+                    .ThenInclude(x => x.CvDocuments)
                 .Include(x => x.Vacancy)
                 .Where(x => x.VacancyId == vacancyId)
                 .OrderByDescending(x => x.MatchScore)

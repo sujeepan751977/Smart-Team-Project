@@ -3,7 +3,8 @@ window.SR = window.SR || {};
 SR.guards = (function () {
   async function requireAuth(roles) {
     if (!SR.auth.isLoggedIn()) {
-      location.href = "/login.html";
+      const next = encodeURIComponent(location.pathname + location.search);
+      location.href = `/login.html?next=${next}`;
       return null;
     }
     try {
@@ -16,7 +17,7 @@ SR.guards = (function () {
         role,
         isActive: me.isActive ?? me.IsActive,
       };
-      localStorage.setItem("smartRecruit_user", JSON.stringify(user));
+      SR.auth.setUser(user);
       if (roles && roles.length && !roles.includes(role)) {
         location.href = "/forbidden.html";
         return null;
@@ -28,7 +29,7 @@ SR.guards = (function () {
         location.href = "/forbidden.html";
         return null;
       }
-      SR.ui.toast(err.message || "Session check failed", "error");
+      SR.ui.toast(SR.ui.friendlyError(err), "error");
       return null;
     }
   }

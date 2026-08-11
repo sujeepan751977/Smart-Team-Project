@@ -8,6 +8,8 @@ namespace Recruitment_Project.DTOs.EmployerVerification
 
         public int EmployerProfileId { get; set; }
 
+        public string? CompanyName { get; set; }
+
         public EmployerVerificationStatus Status { get; set; }
 
         public string? AdministratorFeedback { get; set; }

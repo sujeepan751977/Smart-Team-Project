@@ -198,6 +198,9 @@ namespace Recruitment_Project.Services
                 EmployerProfileId =
                     verification.EmployerProfileId,
 
+                CompanyName =
+                    verification.EmployerProfile?.CompanyName,
+
                 Status =
                     verification.Status,
 

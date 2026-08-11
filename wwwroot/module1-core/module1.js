@@ -16,23 +16,35 @@ SR.module1 = (function () {
     if (!body) return;
     try {
       const d = await SR.api.get("/api/admin/dashboard");
+      const user = SR.auth.getUser();
       body.innerHTML = `
-        <div class="grid-3">
-          <div class="card stat-card"><strong>${d.totalUsers ?? 0}</strong><span>Total users</span></div>
-          <div class="card stat-card"><strong>${d.totalJobSeekers ?? 0}</strong><span>Job seekers</span></div>
-          <div class="card stat-card"><strong>${d.totalEmployers ?? 0}</strong><span>Employers</span></div>
-          <div class="card stat-card"><strong>${d.activeUsers ?? 0}</strong><span>Active</span></div>
-          <div class="card stat-card"><strong>${d.disabledUsers ?? 0}</strong><span>Disabled</span></div>
-        </div>
-        <div class="admin-shortcuts">
-          <a href="/module1-core/users.html">Users Management</a>
-          <a href="/module3-employer/admin-employer-verifications.html">Employer Verification</a>
-          <a href="/module3-employer/admin-pending-vacancies.html">Pending Vacancies</a>
-          <a href="/module5-trust/admin-reported-jobs.html">Reported Jobs</a>
-          <a href="/module5-trust/moderation-audit.html">Moderation Audit</a>
+        <div class="dash">
+          <div class="card dash-hero">
+            <h2>Welcome back, ${SR.utils.escape(user?.fullName || "Admin")}</h2>
+            <p>Monitor users, verifications, vacancies, and trust signals from one place.</p>
+            <div class="row-actions">
+              <a class="btn btn-primary" href="/module1-core/users.html">Manage users</a>
+              <a class="btn btn-outline" href="/module5-trust/admin-reported-jobs.html">Review reports</a>
+            </div>
+          </div>
+          <div class="dash-stats">
+            ${SR.ui.dashStat({ value: d.totalUsers ?? 0, label: "Total users", tone: "navy", iconName: "users" })}
+            ${SR.ui.dashStat({ value: d.totalJobSeekers ?? 0, label: "Job seekers", tone: "blue", iconName: "profile" })}
+            ${SR.ui.dashStat({ value: d.totalEmployers ?? 0, label: "Employers", tone: "blue", iconName: "company" })}
+            ${SR.ui.dashStat({ value: d.activeUsers ?? 0, label: "Active", tone: "ok", iconName: "verify" })}
+            ${SR.ui.dashStat({ value: d.disabledUsers ?? 0, label: "Disabled", tone: "danger", iconName: "reports" })}
+          </div>
+          <p class="dash-section-title">Quick actions</p>
+          <div class="dash-links">
+            ${SR.ui.dashLink({ href: "/module1-core/users.html", label: "Users Management", desc: "Search, enable, or disable accounts", iconName: "users" })}
+            ${SR.ui.dashLink({ href: "/module3-employer/admin-employer-verifications.html", label: "Employer Verification", desc: "Review company documents", iconName: "verify" })}
+            ${SR.ui.dashLink({ href: "/module3-employer/admin-pending-vacancies.html", label: "Pending Vacancies", desc: "Approve or reject listings", iconName: "jobs" })}
+            ${SR.ui.dashLink({ href: "/module5-trust/admin-reported-jobs.html", label: "Reported Jobs", desc: "Investigate job reports", iconName: "reports" })}
+            ${SR.ui.dashLink({ href: "/module5-trust/moderation-audit.html", label: "Moderation Audit", desc: "Track moderation decisions", iconName: "audit" })}
+          </div>
         </div>`;
     } catch (e) {
-      SR.ui.toast(e.message, "error");
+      body.innerHTML = SR.ui.errorState(e);
     }
   }
 
@@ -43,10 +55,14 @@ SR.module1 = (function () {
       const users = await SR.api.get("/api/admin/users");
       const list = Array.isArray(users) ? users : [];
       body.innerHTML = `
-        <div class="card form-grid" style="margin-bottom:1rem">
-          <div class="form-grid two">
-            <label class="field">Search<input id="q" placeholder="Name or email" /></label>
-            <label class="field">Role
+        <div class="card filter-bar" style="margin-bottom:1rem">
+          <div class="filter-toolbar">
+            <label class="filter-search">
+              <span class="field-label">Search</span>
+              <input id="q" type="search" placeholder="Name or email" />
+            </label>
+            <label class="filter-select">
+              <span class="field-label">Role</span>
               <select id="role">
                 <option value="">All</option>
                 <option>JobSeeker</option>
@@ -54,7 +70,8 @@ SR.module1 = (function () {
                 <option>Administrator</option>
               </select>
             </label>
-            <label class="field">Status
+            <label class="filter-select">
+              <span class="field-label">Status</span>
               <select id="status">
                 <option value="">All</option>
                 <option value="active">Active</option>
@@ -65,7 +82,7 @@ SR.module1 = (function () {
         </div>
         <div class="card table-wrap table-as-cards">
           <table class="data" id="users-table">
-            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>`;
@@ -88,12 +105,12 @@ SR.module1 = (function () {
           .map(
             (u) => `
           <tr data-id="${u.id}">
-            <td data-label="ID">${u.id}</td>
-            <td data-label="Name">${SR.utils.escape(u.fullName)}</td>
-            <td data-label="Email">${SR.utils.escape(u.email)}</td>
-            <td data-label="Role">${SR.utils.escape(u.role)}</td>
+            <td class="cell-id" data-label="ID">${u.id}</td>
+            <td class="cell-strong" data-label="Name">${SR.utils.escape(u.fullName)}</td>
+            <td class="cell-muted" data-label="Email">${SR.utils.escape(u.email)}</td>
+            <td data-label="Role">${SR.ui.badge(u.role, "neutral")}</td>
             <td data-label="Status">${u.isActive ? SR.ui.badge("Active", "ok") : SR.ui.badge("Disabled", "danger")}</td>
-            <td data-label="Actions">
+            <td class="cell-actions" data-label="Actions">
               <div class="row-actions" style="margin:0">
                 <a class="btn btn-outline btn-sm" href="/module1-core/user-details.html?id=${u.id}">Details</a>
                 <button class="btn btn-sm ${u.isActive ? "btn-danger" : "btn-primary"}" data-toggle type="button">${u.isActive ? "Disable" : "Enable"}</button>
@@ -111,13 +128,25 @@ SR.module1 = (function () {
               SR.ui.toast("You cannot disable your own account.", "error");
               return;
             }
-            try {
-              await SR.api.patch(`/api/admin/users/${id}/status`, { isActive: enable });
-              SR.ui.toast("Status updated");
-              location.reload();
-            } catch (e) {
-              SR.ui.toast(e.message, "error");
+            const run = async () => {
+              try {
+                await SR.api.patch(`/api/admin/users/${id}/status`, { isActive: enable });
+                SR.ui.toast("Status updated");
+                location.reload();
+              } catch (e) {
+                SR.ui.toast(e.message, "error");
+              }
+            };
+            if (!enable) {
+              SR.ui.confirmAction({
+                title: "Disable user",
+                message: "Disable this account? The user will no longer be able to sign in.",
+                confirmText: "Disable",
+                onConfirm: run,
+              });
+              return;
             }
+            await run();
           };
         });
       };
@@ -171,9 +200,12 @@ SR.module1 = (function () {
       document.getElementById("toggle-password")?.addEventListener("click", () => {
         const input = document.getElementById("login-password");
         const btn = document.getElementById("toggle-password");
+        if (!input || !btn) return;
         const show = input.type === "password";
         input.type = show ? "text" : "password";
-        btn.textContent = show ? "Hide" : "Show";
+        btn.classList.toggle("is-visible", show);
+        btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+        btn.title = show ? "Hide password" : "Show password";
       });
       document.getElementById("login-form")?.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -188,10 +220,7 @@ SR.module1 = (function () {
           const next = new URLSearchParams(location.search).get("next");
           const safeNext =
             next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-          location.href =
-            safeNext && user.role === "JobSeeker"
-              ? safeNext
-              : SR.auth.homeForRole(user.role);
+          location.href = safeNext || SR.auth.homeForRole(user.role);
         } catch (err) {
           alert.hidden = false;
           alert.textContent = err.message || "Login failed";
@@ -203,8 +232,14 @@ SR.module1 = (function () {
     }
     if (path.endsWith("/register.html")) {
       if (SR.guards.redirectIfAuthed()) return;
-      SR.ui.mountPublicHeader();
       let role = "JobSeeker";
+      const roleParam = new URLSearchParams(location.search).get("role");
+      if (roleParam === "Employer") {
+        role = "Employer";
+        document.querySelectorAll("#role-tabs button").forEach((b) => {
+          b.classList.toggle("active", b.dataset.role === "Employer");
+        });
+      }
       document.querySelectorAll("#role-tabs button").forEach((btn) => {
         btn.addEventListener("click", () => {
           role = btn.dataset.role;

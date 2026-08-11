@@ -36,33 +36,18 @@ namespace Recruitment_Project.Services
                     employerProfile.Id);
 
             if (verification == null)
-                return null;
-
-            return new EmployerVerificationDto
             {
-                Id = verification.Id,
-                EmployerProfileId = verification.EmployerProfileId,
-                Status = verification.Status,
-                AdministratorFeedback = verification.AdministratorFeedback,
-                SubmittedAt = verification.SubmittedAt,
-                ReviewedAt = verification.ReviewedAt,
+                return new EmployerVerificationDto
+                {
+                    Id = 0,
+                    EmployerProfileId = employerProfile.Id,
+                    CompanyName = employerProfile.CompanyName,
+                    Status = EmployerVerificationStatus.Unverified,
+                    Documents = new List<EmployerVerificationDocumentDto>()
+                };
+            }
 
-                Documents = verification.Documents
-                    .Select(x => new EmployerVerificationDocumentDto
-                    {
-                        Id = x.Id,
-                        EmployerVerificationId =
-                            x.EmployerVerificationId,
-                        FileName = x.FileName,
-                        FilePath = x.FilePath,
-                        ContentType = x.ContentType,
-                        Status = x.Status,
-                        AdministratorComment =
-                            x.AdministratorComment,
-                        UploadedAt = x.UploadedAt
-                    })
-                    .ToList()
-            };
+            return MapToDto(verification, employerProfile.CompanyName);
         }
 
         public async Task SubmitVerificationAsync(int userId)
@@ -83,16 +68,13 @@ namespace Recruitment_Project.Services
                     "Upload at least one verification document before submitting.");
             }
 
-            if (verification.Status == EmployerVerificationStatus.Verified)
+            if (verification.Status != EmployerVerificationStatus.Unverified)
             {
                 throw new InvalidOperationException(
-                    "Employer is already verified.");
-            }
-
-            if (verification.Status == EmployerVerificationStatus.PendingReview)
-            {
-                throw new InvalidOperationException(
-                    "Verification is already pending review.");
+                    verification.Status == EmployerVerificationStatus.Rejected ||
+                    verification.Status == EmployerVerificationStatus.MoreInformationRequired
+                        ? "Use resubmit after updating your documents."
+                        : "Verification cannot be submitted in the current status.");
             }
 
             if (verification.Documents == null ||
@@ -105,6 +87,8 @@ namespace Recruitment_Project.Services
             verification.Status =
                 EmployerVerificationStatus.PendingReview;
 
+            verification.AdministratorFeedback = null;
+            verification.ReviewedAt = null;
             verification.SubmittedAt = DateTime.UtcNow;
             verification.UpdatedAt = DateTime.UtcNow;
 
@@ -137,6 +121,7 @@ namespace Recruitment_Project.Services
             verification.Status =
                 EmployerVerificationStatus.Unverified;
 
+            verification.SubmittedAt = null;
             verification.UpdatedAt = DateTime.UtcNow;
 
             await _verificationRepository.UpdateAsync(verification);
@@ -165,6 +150,13 @@ namespace Recruitment_Project.Services
             {
                 throw new InvalidOperationException(
                     "Only rejected or information-required verification can be resubmitted");
+            }
+
+            if (verification.Documents == null ||
+                verification.Documents.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "Upload at least one verification document before resubmitting.");
             }
 
             verification.Status =
@@ -341,6 +333,36 @@ namespace Recruitment_Project.Services
                 employerProfile);
 
             await _employerRepository.SaveChangesAsync();
+        }
+
+        private static EmployerVerificationDto MapToDto(
+            EmployerVerification verification,
+            string? companyName)
+        {
+            return new EmployerVerificationDto
+            {
+                Id = verification.Id,
+                EmployerProfileId = verification.EmployerProfileId,
+                CompanyName = companyName
+                    ?? verification.EmployerProfile?.CompanyName,
+                Status = verification.Status,
+                AdministratorFeedback = verification.AdministratorFeedback,
+                SubmittedAt = verification.SubmittedAt,
+                ReviewedAt = verification.ReviewedAt,
+                Documents = verification.Documents
+                    .Select(x => new EmployerVerificationDocumentDto
+                    {
+                        Id = x.Id,
+                        EmployerVerificationId = x.EmployerVerificationId,
+                        FileName = x.FileName,
+                        FilePath = x.FilePath,
+                        ContentType = x.ContentType,
+                        Status = x.Status,
+                        AdministratorComment = x.AdministratorComment,
+                        UploadedAt = x.UploadedAt
+                    })
+                    .ToList()
+            };
         }
     }
 }

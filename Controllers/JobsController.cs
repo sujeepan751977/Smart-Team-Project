@@ -20,12 +20,16 @@ namespace Recruitment_Project.Controllers
 
         [HttpGet]
         [AllowAnonymous]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> SearchJobs(
             [FromQuery] JobSearchRequestDto request)
         {
+            Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            Response.Headers.Pragma = "no-cache";
+
             var result =
                 await _jobSearchService
-                .SearchJobsAsync(request);
+                .SearchJobsAsync(request, TryGetUserId());
 
             return Ok(result);
         }
@@ -35,13 +39,11 @@ namespace Recruitment_Project.Controllers
         public async Task<IActionResult> GetJobDetails(
             int id)
         {
-            var userId = TryGetUserId();
-
             var result =
                 await _jobSearchService
                 .GetJobDetailsAsync(
                     id,
-                    userId);
+                    TryGetUserId());
 
             if (result == null)
                 return NotFound();
@@ -54,7 +56,11 @@ namespace Recruitment_Project.Controllers
             if (User.Identity?.IsAuthenticated != true)
                 return null;
 
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+            var claim =
+                User.FindFirst(ClaimTypes.NameIdentifier)
+                ?? User.FindFirst("sub")
+                ?? User.FindFirst("nameid");
+
             if (claim == null || !int.TryParse(claim.Value, out var userId))
                 return null;
 

@@ -17,19 +17,23 @@ SR.module2 = (function () {
       try {
         const me = await SR.auth.me();
         const role = me.role || me.Role;
+        const user = {
+          userId: me.id ?? me.Id ?? SR.auth.getUser()?.userId,
+          fullName: me.fullName || me.FullName,
+          email: me.email || me.Email,
+          role,
+          isActive: me.isActive ?? me.IsActive,
+        };
+        SR.auth.setUser(user);
         if (role === "JobSeeker") {
-          const user = {
-            userId: me.id ?? me.Id ?? SR.auth.getUser()?.userId,
-            fullName: me.fullName || me.FullName,
-            email: me.email || me.Email,
-            role,
-            isActive: me.isActive ?? me.IsActive,
-          };
-          localStorage.setItem("smartRecruit_user", JSON.stringify(user));
           SR.ui.mountAppShell(user);
           await SR.ui.mountNotificationBell();
           return { user, body: SR.ui.page(title, sub, actions), guest: false };
         }
+        // Other roles keep their shell while browsing public jobs
+        SR.ui.mountAppShell(user);
+        await SR.ui.mountNotificationBell();
+        return { user, body: SR.ui.page(title, sub, actions), guest: true };
       } catch (err) {
         if (err.status === 401) SR.auth.clear();
       }
@@ -42,37 +46,108 @@ SR.module2 = (function () {
     const ctx = await boot("Dashboard", "Your career hub on Smart Recruit.");
     if (!ctx) return;
     try {
-      const [dash, profile] = await Promise.all([
+      const [dash, profile, cv] = await Promise.all([
         SR.api.get("/api/jobseekers/me/dashboard"),
         SR.api.get("/api/jobseekers/me/profile").catch(() => null),
+        SR.api.get("/api/jobseekers/me/cv").catch(() => null),
       ]);
-      const pct = dash.profileCompletion ?? profile?.profileCompletion ?? 0;
+      const pct = Number(dash.profileCompletion ?? profile?.profileCompletion ?? 0) || 0;
+      const hasCv = !!cv;
+      const needsChecklist = pct < 100 || !hasCv;
+      const checklistItems = [];
+      if (pct < 100) {
+        checklistItems.push({
+          done: false,
+          text: `Complete your profile (${pct}%)`,
+          href: "/module2-jobseeker/profile.html",
+          label: "Edit profile",
+        });
+      }
+      if (!hasCv) {
+        checklistItems.push({
+          done: false,
+          text: "Upload your CV",
+          href: "/module2-jobseeker/profile.html#cv",
+          label: "Upload CV",
+        });
+      }
+      let nextHref = "/module2-jobseeker/jobs.html";
+      let nextLabel = "Find Jobs";
+      let nextHint = "Browse open roles and see how you match.";
+      if (pct < 100) {
+        nextHref = "/module2-jobseeker/profile.html";
+        nextLabel = "Complete your profile";
+        nextHint = "A stronger profile improves your match scores.";
+      } else if (!hasCv) {
+        nextHref = "/module2-jobseeker/profile.html#cv";
+        nextLabel = "Upload your CV";
+        nextHint = "Employers expect a CV before you apply.";
+      }
+      const title =
+        dash.professionalTitle || profile?.professionalTitle || "";
       ctx.body.innerHTML = `
-        <div class="card welcome-banner" style="margin-bottom:1rem">
-          <h1>Welcome back, ${SR.utils.escape(dash.fullName || ctx.user.fullName)}</h1>
-          <p class="muted" style="margin-top:0.4rem">${SR.utils.escape(dash.professionalTitle || "Complete your profile to improve matches.")}</p>
-        </div>
-        <div class="grid-3">
-          <div class="card">
-            <div class="ring-wrap">
-              <div class="ring" style="--p:${Number(pct) || 0}" data-label="${Number(pct) || 0}%"></div>
-              <div><strong>Profile completion</strong><p class="muted">Keep skills and experience up to date.</p></div>
+        <div class="dash">
+          <div class="card dash-hero">
+            <h2>Welcome back, ${SR.utils.escape(dash.fullName || ctx.user.fullName)}</h2>
+            <p>${
+              title
+                ? SR.utils.escape(title)
+                : "Set your professional title and skills so employers can find you."
+            }</p>
+            <p style="margin-top:0.55rem;color:rgba(255,255,255,0.9)">${SR.utils.escape(nextHint)}</p>
+            <div class="row-actions">
+              <a class="btn btn-primary" href="${nextHref}">${SR.utils.escape(nextLabel)}</a>
+              ${
+                nextHref !== "/module2-jobseeker/jobs.html"
+                  ? `<a class="btn btn-outline" href="/module2-jobseeker/jobs.html">Browse jobs</a>`
+                  : `<a class="btn btn-outline" href="/module4-applications/jobseeker-applications.html">My Applications</a>`
+              }
             </div>
           </div>
-          <div class="card stat-card"><strong>${dash.totalSkills ?? 0}</strong><span>Total skills</span></div>
-          <div class="card stat-card"><strong>${SR.utils.escape(dash.professionalTitle || "—")}</strong><span>Professional title</span></div>
-        </div>
-        <div class="admin-shortcuts" style="margin-top:1rem;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem">
-          <a class="btn btn-primary" href="/module2-jobseeker/jobs.html">Find Jobs</a>
-          <a class="btn btn-outline" href="/module2-jobseeker/profile.html">Complete Profile</a>
-          <a class="btn btn-outline" href="/module2-jobseeker/profile.html#cv">Upload CV</a>
-          <a class="btn btn-outline" href="/module4-applications/jobseeker-applications.html">My Applications</a>
-          <a class="btn btn-outline" href="/module4-applications/jobseeker-contact-requests.html">Contact Requests</a>
-          <a class="btn btn-outline" href="/module4-applications/jobseeker-interviews.html">Interviews</a>
-          <a class="btn btn-outline" href="/module5-trust/notifications.html">Notifications</a>
+          <div class="dash-split">
+            <div class="dash">
+              <div class="dash-stats">
+                <div class="dash-stat tone-blue">
+                  <div class="dash-stat-top">
+                    <span class="dash-stat-icon">${SR.ui.icon("profile")}</span>
+                    <div class="ring" style="--p:${pct}" data-label="${pct}%"></div>
+                  </div>
+                  <span>Profile completion</span>
+                </div>
+                ${SR.ui.dashStat({ value: dash.totalSkills ?? 0, label: "Total skills", tone: "navy", iconName: "applications" })}
+                ${SR.ui.dashStat({ value: title || "—", label: "Professional title", tone: "ok", iconName: "jobs" })}
+              </div>
+              ${
+                needsChecklist
+                  ? `<div class="dash-panel">
+                      <h3>Getting started</h3>
+                      <ul class="dash-check">
+                        ${checklistItems
+                          .map(
+                            (item) =>
+                              `<li><span>${SR.utils.escape(item.text)}</span><a href="${item.href}">${SR.utils.escape(item.label)}</a></li>`
+                          )
+                          .join("")}
+                      </ul>
+                    </div>`
+                  : ""
+              }
+            </div>
+            <div>
+              <p class="dash-section-title">Shortcuts</p>
+              <div class="dash-links" style="margin-top:0.55rem">
+                ${SR.ui.dashLink({ href: "/module2-jobseeker/jobs.html", label: "Find Jobs", desc: "Browse open vacancies", iconName: "jobs" })}
+                ${SR.ui.dashLink({ href: "/module2-jobseeker/profile.html", label: "Complete Profile", desc: "Skills and experience", iconName: "profile" })}
+                ${SR.ui.dashLink({ href: "/module2-jobseeker/profile.html#cv", label: "Upload CV", desc: "Share your resume", iconName: "applications" })}
+                ${SR.ui.dashLink({ href: "/module4-applications/jobseeker-applications.html", label: "My Applications", desc: "Track application status", iconName: "applications" })}
+                ${SR.ui.dashLink({ href: "/module4-applications/jobseeker-interviews.html", label: "Interviews", desc: "Upcoming interview slots", iconName: "interviews" })}
+                ${SR.ui.dashLink({ href: "/module5-trust/notifications.html", label: "Notifications", desc: "Latest account alerts", iconName: "notifications" })}
+              </div>
+            </div>
+          </div>
         </div>`;
     } catch (e) {
-      SR.ui.toast(e.message, "error");
+      ctx.body.innerHTML = SR.ui.errorState(e);
     }
   }
 
@@ -115,43 +190,63 @@ SR.module2 = (function () {
 
     ctx.body.innerHTML = `
       <div class="grid-2">
-        <form id="profile-form" class="card form-grid">
-          <div class="progress-label"><span>Profile completion</span><span>${profile.profileCompletion ?? 0}%</span></div>
-          <div class="progress"><span style="width:${profile.profileCompletion ?? 0}%"></span></div>
-          <label class="field">Professional title<input name="professionalTitle" value="${esc(profile.professionalTitle)}" /></label>
-          <div class="form-grid two">
-            <label class="field">Location<input name="location" value="${esc(profile.location)}" /></label>
-            <label class="field">Experience (years)<input name="experience" type="number" min="0" value="${esc(profile.experience)}" /></label>
+        <form id="profile-form" class="card form-card">
+          <div class="form-card-body">
+            <section class="form-section">
+              <h3 class="form-section-title">Profile strength</h3>
+              <div class="progress-label"><span>Completion</span><span>${profile.profileCompletion ?? 0}%</span></div>
+              <div class="progress"><span style="width:${profile.profileCompletion ?? 0}%"></span></div>
+            </section>
+            <section class="form-section">
+              <h3 class="form-section-title">Professional details</h3>
+              <label class="field"><span class="field-label">Professional title</span><input name="professionalTitle" value="${esc(profile.professionalTitle)}" /></label>
+              <div class="form-grid two">
+                <label class="field"><span class="field-label">Location</span><input name="location" value="${esc(profile.location)}" /></label>
+                <label class="field"><span class="field-label">Experience (years)</span><input name="experience" type="number" min="0" value="${esc(profile.experience)}" /></label>
+              </div>
+              <label class="field"><span class="field-label">Education</span><input name="education" value="${esc(profile.education)}" /></label>
+              <label class="field"><span class="field-label">About</span><textarea name="about" rows="4">${esc(profile.about)}</textarea></label>
+            </section>
+            <section class="form-section">
+              <h3 class="form-section-title">Skills</h3>
+              <div class="chip-row" id="skill-chips"></div>
+              <div class="skill-input-row">
+                <input id="skill-input" placeholder="Type a skill and press Enter" />
+                <button type="button" class="btn btn-outline" id="add-skill">Add</button>
+              </div>
+            </section>
           </div>
-          <label class="field">Education<input name="education" value="${esc(profile.education)}" /></label>
-          <label class="field">About<textarea name="about">${esc(profile.about)}</textarea></label>
-          <div>
-            <label class="field">Skills</label>
-            <div class="chip-row" id="skill-chips" style="margin:0.5rem 0"></div>
-            <div class="skill-input-row">
-              <input id="skill-input" placeholder="Type a skill and press Enter" />
-              <button type="button" class="btn btn-outline" id="add-skill">Add</button>
-            </div>
+          <div class="form-card-footer">
+            <button class="btn btn-primary" type="submit">Save profile</button>
           </div>
-          <button class="btn btn-primary" type="submit">Save profile</button>
         </form>
-        <div class="card" id="cv">
-          <h3>CV</h3>
-          <p class="muted" style="margin:0.5rem 0 1rem">PDF, DOC, DOCX · max 5 MB</p>
-          ${
-            cv
-              ? `<p><strong>${esc(cv.fileName || cv.originalFileName || "Uploaded")}</strong></p>
-                 <div class="meta">
-                   <span>${esc(cv.fileType || "")}</span>
-                   <span>${SR.utils.fileSize(cv.fileSize)}</span>
-                   <span>${SR.utils.formatDate(cv.uploadedAt)}</span>
-                 </div>`
-              : `<p class="muted">No CV uploaded yet.</p>`
-          }
-          <form id="cv-form" class="form-grid" style="margin-top:1rem">
-            <input name="file" type="file" accept=".pdf,.doc,.docx,application/pdf" required />
-            <button class="btn btn-navy" type="submit">${cv ? "Replace CV" : "Upload CV"}</button>
-          </form>
+        <div class="card form-card" id="cv">
+          <div class="form-card-body">
+            <section class="form-section">
+              <h3 class="form-section-title">Curriculum vitae</h3>
+              <p class="muted" style="margin:0">PDF, DOC, DOCX · max 5 MB</p>
+              ${
+                cv
+                  ? `<div class="doc-row" style="margin-top:0.35rem">
+                       <div class="doc-row-main">
+                         <span class="doc-name">${esc(cv.fileName || cv.originalFileName || "Uploaded")}</span>
+                         <span class="doc-date">${esc(cv.fileType || "")}</span>
+                         <span class="doc-date">${SR.utils.fileSize(cv.fileSize)}</span>
+                         <span class="doc-date">${SR.utils.formatDate(cv.uploadedAt)}</span>
+                       </div>
+                     </div>`
+                  : `<p class="muted" style="margin:0.35rem 0 0">No CV uploaded yet.</p>`
+              }
+              <form id="cv-form" class="form-grid" style="margin-top:0.35rem">
+                <label class="field"><span class="field-label">Choose file</span>
+                  <input name="file" type="file" accept=".pdf,.doc,.docx,application/pdf" required />
+                </label>
+              </form>
+            </section>
+          </div>
+          <div class="form-card-footer">
+            <button class="btn btn-navy" type="submit" form="cv-form">${cv ? "Replace CV" : "Upload CV"}</button>
+          </div>
         </div>
       </div>`;
 
@@ -228,8 +323,15 @@ SR.module2 = (function () {
   }
 
   async function jobsPage() {
-    const ctx = await bootJobs("Find Jobs", "Browse open vacancies — no account needed to explore.");
+    const ctx = await bootJobs(
+      "Find Jobs",
+      "Browse open vacancies — no account needed to explore."
+    );
     if (!ctx) return;
+    if (!ctx.guest) {
+      const sub = document.querySelector(".page-head p");
+      if (sub) sub.textContent = "Browse open vacancies and see how well you match.";
+    }
     const params = new URLSearchParams(location.search);
     let pageNumber = Number(params.get("pageNumber") || 1);
     const pageSize = Number(params.get("pageSize") || 10);
@@ -251,7 +353,7 @@ SR.module2 = (function () {
           <!-- minimumMatch omitted: repository does not apply it -->
           <button class="btn btn-primary" type="button" id="apply-filters">Apply filters</button>
         </aside>
-        <div>
+        <div class="jobs-results-pane">
           <div id="job-results" class="list"></div>
           <div class="pagination">
             <button class="btn btn-outline btn-sm" id="prev-page" type="button">Previous</button>
@@ -300,8 +402,28 @@ SR.module2 = (function () {
         const v = params.get(k);
         if (v) q.set(k, v);
       });
-      const items = await SR.api.get(`/api/jobs?${q}`, { auth: !ctx.guest });
-      const list = Array.isArray(items) ? items : items.items || [];
+      const useAuth = SR.auth.isLoggedIn();
+      const items = await SR.api.get(`/api/jobs?${q}`, { auth: useAuth });
+      let list = Array.isArray(items) ? items : items.items || [];
+
+      // If signed in as job seeker but API did not personalize scores, retry once with auth.
+      const personalized = list.some(
+        (j) => j.hasMatchScore === true || j.HasMatchScore === true
+      );
+      if (!ctx.guest && useAuth && list.length && !personalized) {
+        list = await SR.api.get(`/api/jobs?${q}&_ts=${Date.now()}`, { auth: true });
+        list = Array.isArray(list) ? list : list.items || [];
+      }
+
+      if (!ctx.guest) {
+        list = list
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(b.matchScore ?? b.MatchScore ?? 0) -
+              Number(a.matchScore ?? a.MatchScore ?? 0)
+          );
+      }
       document.getElementById("next-page").disabled = list.length < pageSize;
       document.getElementById("prev-page").disabled = pageNumber <= 1;
       document.getElementById("next-page").onclick = () => {
@@ -313,27 +435,40 @@ SR.module2 = (function () {
         return;
       }
 
-      // Do not show match % on list cards — list DTO score is not used as a primary signal here.
       results.innerHTML = list
         .map((j) => {
-          const desc = (j.description || "").slice(0, 160);
+          const desc = ((j.description || j.Description || "") + "").slice(0, 160);
+          const score = Number(j.matchScore ?? j.MatchScore ?? 0);
+          const showScore =
+            !ctx.guest &&
+            (j.hasMatchScore === true ||
+              j.HasMatchScore === true ||
+              score > 0);
           return `
-          <a class="list-item" href="/module2-jobseeker/job-details.html?id=${j.id}">
-            <h3>${SR.utils.escape(j.jobTitle)}</h3>
-            <div class="meta">
-              <span>${SR.utils.escape(j.companyName)}</span>
-              <span>${SR.utils.escape(j.location)}</span>
-              <span>${j.requiredExperience ?? 0} yrs exp</span>
+          <a class="list-item ${showScore ? "list-item-with-score" : ""}" href="/module2-jobseeker/job-details.html?id=${j.id ?? j.Id}">
+            <div class="list-item-main">
+              <h3>${SR.utils.escape(j.jobTitle || j.JobTitle || "Job")}</h3>
+              <div class="meta">
+                <span>${SR.utils.escape(j.companyName || j.CompanyName || "")}</span>
+                <span>${SR.utils.escape(j.location || j.Location || "")}</span>
+                <span>${j.requiredExperience ?? j.RequiredExperience ?? 0} yrs exp</span>
+                ${showScore ? SR.utils.matchPill(score) : ""}
+              </div>
+              <p class="muted" style="margin-top:0.55rem">${SR.utils.escape(desc)}${((j.description || j.Description || "") + "").length > 160 ? "…" : ""}</p>
+              <div class="chip-row" style="margin-top:0.65rem">${(j.requiredSkills || j.RequiredSkills || [])
+                .slice(0, 6)
+                .map((s) => `<span class="chip">${SR.utils.escape(s)}</span>`)
+                .join("")}</div>
+              <div class="row-actions"><span class="btn btn-outline btn-sm">View Details</span></div>
             </div>
-            <p class="muted" style="margin-top:0.55rem">${SR.utils.escape(desc)}${(j.description || "").length > 160 ? "…" : ""}</p>
-            <div class="chip-row" style="margin-top:0.65rem">${(j.requiredSkills || [])
-              .slice(0, 6)
-              .map((s) => `<span class="chip">${SR.utils.escape(s)}</span>`)
-              .join("")}</div>
-            <div class="row-actions"><span class="btn btn-outline btn-sm">View Details</span></div>
+            ${showScore ? SR.utils.matchSide(score) : ""}
           </a>`;
         })
         .join("");
+
+      if (!ctx.guest && list.length && !list.some((j) => j.hasMatchScore === true || j.HasMatchScore === true || Number(j.matchScore ?? j.MatchScore ?? 0) > 0)) {
+        SR.ui.toast("Match scores need a refresh — sign out and sign in again.", "error");
+      }
     } catch (e) {
       results.innerHTML = SR.ui.empty(e.message || "Failed to load jobs.");
     }
@@ -362,6 +497,11 @@ SR.module2 = (function () {
 
       const next = encodeURIComponent(`/module2-jobseeker/job-details.html?id=${id}`);
       const loginApplyHref = `/login.html?next=${next}`;
+      const cannotApplyReason =
+        job.cannotApplyReason ||
+        job.canApplyReason ||
+        job.applyBlockedReason ||
+        "You cannot apply to this vacancy right now. Complete your profile or check if you already applied.";
       const actions = ctx.guest
         ? `<a class="btn btn-primary" id="guest-apply-btn" href="${loginApplyHref}">Apply Now</a>
            <a class="btn btn-outline" href="/register.html">Create Account</a>`
@@ -369,7 +509,8 @@ SR.module2 = (function () {
           ? `<button class="btn btn-primary" id="apply-btn" type="button">Apply Now</button>
              <button class="btn btn-danger btn-sm" id="report-btn" type="button">Report Job</button>`
           : `<button class="btn btn-outline" type="button" disabled>Cannot apply</button>
-             <button class="btn btn-danger btn-sm" id="report-btn" type="button">Report Job</button>`;
+             <button class="btn btn-danger btn-sm" id="report-btn" type="button">Report Job</button>
+             <p class="muted" style="margin-top:0.65rem;font-size:0.88rem">${SR.utils.escape(cannotApplyReason)}</p>`;
 
       const matchPanel = ctx.guest
         ? `<div class="card match-panel" style="margin-bottom:1rem">
@@ -377,8 +518,8 @@ SR.module2 = (function () {
               <div class="row-actions" style="margin-top:1rem">${actions}</div>
             </div>`
         : `<div class="card match-panel" style="margin-bottom:1rem">
-              <div class="score">${Math.round(job.matchScore || 0)}%</div>
-              <p class="muted">Overall match (from backend)</p>
+              <div class="score">${SR.utils.matchPercent(job.matchScore ?? job.MatchScore)}%</div>
+              <p class="muted">Overall match score</p>
               <div style="margin-top:1rem">
                 <div class="progress-label"><span>Skills (max 60)</span><span>${Math.round(skillsScore)}</span></div>
                 <div class="progress"><span style="width:${Math.min(100, (skillsScore / 60) * 100)}%"></span></div>
@@ -393,7 +534,8 @@ SR.module2 = (function () {
             </div>`;
 
       ctx.body.innerHTML = `
-        <div class="grid-2">
+        <a class="back-link" href="/module2-jobseeker/jobs.html">← Back to jobs</a>
+        <div class="grid-2" style="margin-top:0.75rem">
           <div class="card">
             <div class="meta" style="margin-bottom:0.8rem">
               ${SR.ui.badge(job.trustLabel || "Standard Review")}

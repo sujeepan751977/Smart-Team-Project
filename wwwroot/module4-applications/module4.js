@@ -21,10 +21,19 @@ SR.module4 = (function () {
         const coverLetter = backdrop.querySelector("#cover").value.trim() || null;
         await SR.api.post(`/api/jobs/${jobId}/applications`, { coverLetter });
         SR.ui.toast("Application submitted");
+        SR.ui.toast("View My Applications", "info");
         const btn = document.getElementById("apply-btn");
         if (btn) {
           btn.textContent = "Applied";
           btn.disabled = true;
+          if (!document.getElementById("view-apps-link")) {
+            const link = document.createElement("a");
+            link.id = "view-apps-link";
+            link.className = "btn btn-outline btn-sm";
+            link.href = "/module4-applications/jobseeker-applications.html";
+            link.textContent = "View My Applications";
+            btn.insertAdjacentElement("afterend", link);
+          }
         }
       },
     });
@@ -36,31 +45,37 @@ SR.module4 = (function () {
     try {
       const apps = await SR.api.get("/api/jobseekers/me/applications");
       const list = Array.isArray(apps) ? apps : [];
-      const counts = {
-        Applied: list.filter((a) => a.status === "Applied").length,
-        UnderReview: list.filter((a) => a.status === "UnderReview").length,
-        Shortlisted: list.filter((a) => a.status === "Shortlisted").length,
-        Rejected: list.filter((a) => a.status === "Rejected").length,
-      };
+      const counts = [
+        { key: "Applied", label: SR.status.application("Applied") },
+        { key: "UnderReview", label: SR.status.application("UnderReview") },
+        { key: "Shortlisted", label: SR.status.application("Shortlisted") },
+        { key: "Rejected", label: SR.status.application("Rejected") },
+      ].map((c) => ({
+        ...c,
+        count: list.filter((a) => a.status === c.key).length,
+      }));
       ctx.body.innerHTML = `
         <div class="summary-row">
-          ${Object.entries(counts)
+          ${counts
             .map(
-              ([k, v]) =>
-                `<div class="card stat-card"><strong>${v}</strong><span>${k}</span></div>`
+              (c) =>
+                `<div class="card stat-card"><strong>${c.count}</strong><span>${SR.utils.escape(c.label)}</span></div>`
             )
             .join("")}
         </div>
-        <div class="card" style="margin-bottom:1rem">
-          <label class="field">Filter by status
-            <select id="status-filter">
-              <option value="">All</option>
-              <option>Applied</option>
-              <option>UnderReview</option>
-              <option>Shortlisted</option>
-              <option>Rejected</option>
-            </select>
-          </label>
+        <div class="card filter-bar" style="margin-bottom:1rem">
+          <div class="filter-toolbar">
+            <label class="filter-select">
+              <span class="field-label">Status</span>
+              <select id="status-filter">
+                <option value="">All</option>
+                <option value="Applied">${SR.status.application("Applied")}</option>
+                <option value="UnderReview">${SR.status.application("UnderReview")}</option>
+                <option value="Shortlisted">${SR.status.application("Shortlisted")}</option>
+                <option value="Rejected">${SR.status.application("Rejected")}</option>
+              </select>
+            </label>
+          </div>
         </div>
         <div id="apps-list" class="list"></div>`;
 
@@ -69,7 +84,12 @@ SR.module4 = (function () {
         const filtered = filter ? list.filter((a) => a.status === filter) : list;
         const box = document.getElementById("apps-list");
         if (!filtered.length) {
-          box.innerHTML = SR.ui.empty("No applications yet.");
+          box.innerHTML = list.length
+            ? SR.ui.empty("No applications match this filter.")
+            : SR.ui.empty("No applications yet.", {
+                detail: "Browse open roles and apply when you find a good match.",
+                cta: { href: "/module2-jobseeker/jobs.html", label: "Find Jobs" },
+              });
           return;
         }
         const cards = [];
@@ -82,14 +102,16 @@ SR.module4 = (function () {
             /* historical vacancy may no longer be Open */
           }
           cards.push(`
-            <div class="list-item">
-              <h3>${SR.utils.escape(title)}</h3>
-              <div class="meta">
-                ${SR.ui.badge(a.status, SR.status.applicationKind(a.status))}
-                <span>Match ${a.matchScore ?? 0}</span>
-                <span>${SR.utils.formatDate(a.appliedAt)}</span>
+            <div class="list-item list-item-with-score">
+              <div class="list-item-main">
+                <h3>${SR.utils.escape(title)}</h3>
+                <div class="meta">
+                  ${SR.ui.badge(SR.status.application(a.status), SR.status.applicationKind(a.status))}
+                  <span>${SR.utils.formatDate(a.appliedAt)}</span>
+                </div>
+                ${a.coverLetter ? `<p class="muted" style="margin-top:0.5rem">${SR.utils.escape(a.coverLetter)}</p>` : ""}
               </div>
-              ${a.coverLetter ? `<p class="muted" style="margin-top:0.5rem">${SR.utils.escape(a.coverLetter)}</p>` : ""}
+              ${SR.utils.matchSide(a.matchScore ?? a.MatchScore ?? 0)}
             </div>`);
         }
         box.innerHTML = cards.join("");
@@ -129,7 +151,10 @@ SR.module4 = (function () {
             </div>`;
               })
               .join("")
-          : SR.ui.empty("No contact requests.")
+          : SR.ui.empty("No contact requests.", {
+              detail: "When employers request contact after you apply, they will appear here.",
+              cta: { href: "/module2-jobseeker/jobs.html", label: "Find Jobs" },
+            })
       }</div>`;
 
       ctx.body.querySelectorAll("[data-act]").forEach((btn) => {
@@ -182,7 +207,13 @@ SR.module4 = (function () {
             </div>`;
               })
               .join("")
-          : SR.ui.empty("No interviews scheduled.")
+          : SR.ui.empty("No interviews scheduled.", {
+              detail: "Interview invites from employers will show up here after you apply.",
+              cta: {
+                href: "/module4-applications/jobseeker-applications.html",
+                label: "My Applications",
+              },
+            })
       }</div>`;
     } catch (e) {
       SR.ui.toast(e.message, "error");
@@ -194,69 +225,116 @@ SR.module4 = (function () {
     if (!ctx) return;
     let vacancyId = SR.utils.qs("vacancyId");
     try {
-      if (!vacancyId) {
-        const vacancies = await SR.api.get("/api/employer/vacancies");
-        const items = Array.isArray(vacancies) ? vacancies : [];
-        ctx.body.innerHTML = `
-          <div class="card form-grid">
-            <label class="field">Select vacancy
-              <select id="vac-select">
-                <option value="">Choose…</option>
-                ${items
-                  .map((v) => `<option value="${v.id}">${SR.utils.escape(v.title)}</option>`)
-                  .join("")}
-              </select>
-            </label>
-          </div>`;
-        document.getElementById("vac-select").onchange = (e) => {
-          if (e.target.value)
-            location.href = `/module4-applications/employer-applicants.html?vacancyId=${e.target.value}`;
-        };
+      const vacancies = await SR.api.get("/api/employer/vacancies");
+      const items = Array.isArray(vacancies) ? vacancies : [];
+      if (!items.length) {
+        ctx.body.innerHTML = SR.ui.empty("No vacancies yet.", {
+          detail: "Create a vacancy first, then review applicants here.",
+          cta: { href: "/module3-employer/vacancies.html", label: "Go to Vacancies" },
+        });
         return;
       }
 
+      if (!vacancyId) {
+        ctx.body.innerHTML = `
+          <div class="list">
+            ${items
+              .map((v) => {
+                const id = v.id ?? v.Id;
+                const title = v.title || v.Title || `Vacancy #${id}`;
+                const status = v.status ?? v.Status;
+                const location = v.workLocation || v.WorkLocation || "";
+                return `
+              <a class="list-item" href="/module4-applications/employer-applicants.html?vacancyId=${id}" style="text-decoration:none;color:inherit;display:block">
+                <h3>${SR.utils.escape(title)}</h3>
+                <div class="meta">
+                  ${SR.ui.badge(SR.status.vacancy(status), SR.status.vacancyKind(status))}
+                  ${location ? `<span>${SR.utils.escape(location)}</span>` : ""}
+                  <span>View applicants →</span>
+                </div>
+              </a>`;
+              })
+              .join("")}
+          </div>`;
+        return;
+      }
+
+      const selected = items.find((v) => String(v.id ?? v.Id) === String(vacancyId));
+      const selectedTitle = selected?.title || selected?.Title || `Vacancy #${vacancyId}`;
       const apps = await SR.api.get(`/api/employer/vacancies/${vacancyId}/applications`);
       const list = (Array.isArray(apps) ? apps : [])
         .slice()
-        .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+        .sort((a, b) => (b.matchScore ?? b.MatchScore ?? 0) - (a.matchScore ?? a.MatchScore ?? 0));
 
-      ctx.body.innerHTML = `<div class="list">${
+      const statusVal = (a) => SR.status.application(a.status ?? a.Status);
+      const selectedOpt = (a, key) => (statusVal(a) === SR.status.application(key) ? "selected" : "");
+
+      ctx.body.innerHTML = `
+        <div class="card" style="margin-bottom:1rem">
+          <div class="meta" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.65rem">
+            <strong>${SR.utils.escape(selectedTitle)}</strong>
+            <span class="muted" style="font-size:0.88rem">${list.length} applicant${list.length === 1 ? "" : "s"} · sorted by match score</span>
+            <a class="btn btn-outline btn-sm" href="/module4-applications/employer-applicants.html">Change vacancy</a>
+          </div>
+        </div>
+        <div class="list">${
         list.length
           ? list
-              .map(
-                (a) => `
-          <div class="list-item" data-id="${a.id}">
-            <h3>Candidate Profile #${a.jobSeekerProfileId}</h3>
-            <div class="meta">
-              ${SR.ui.badge(a.status, SR.status.applicationKind(a.status))}
-              <span>Match ${a.matchScore ?? 0}</span>
-              <span>${SR.utils.formatDate(a.appliedAt)}</span>
+              .map((a) => {
+                const id = a.id ?? a.Id;
+                const profileId = a.jobSeekerProfileId ?? a.JobSeekerProfileId;
+                const name = a.candidateName || a.CandidateName || `Candidate #${profileId}`;
+                const match = a.matchScore ?? a.MatchScore ?? 0;
+                const appliedAt = a.appliedAt || a.AppliedAt;
+                const cover = a.coverLetter || a.CoverLetter || "";
+                const st = a.status ?? a.Status;
+                const hasCv = a.hasCv ?? a.HasCv;
+                const cvName = a.cvFileName || a.CvFileName || "CV";
+                return `
+          <div class="list-item list-item-with-score" data-id="${id}">
+            <div class="list-item-main">
+              <h3>${SR.utils.escape(name)}</h3>
+              <div class="meta">
+                ${SR.ui.badge(SR.status.application(st), SR.status.applicationKind(st))}
+                ${SR.utils.matchPill(match)}
+                <span>${SR.utils.formatDate(appliedAt)}</span>
+                ${hasCv ? `<span>${SR.utils.escape(cvName)}</span>` : `<span class="muted">No CV</span>`}
+              </div>
+              ${cover ? `<p class="muted" style="margin-top:0.5rem">${SR.utils.escape(cover)}</p>` : ""}
+              <div class="row-actions">
+                <select data-status>
+                  <option value="UnderReview" ${selectedOpt(a, "UnderReview")}>${SR.status.application("UnderReview")}</option>
+                  <option value="Shortlisted" ${selectedOpt(a, "Shortlisted")}>${SR.status.application("Shortlisted")}</option>
+                  <option value="Rejected" ${selectedOpt(a, "Rejected")}>${SR.status.application("Rejected")}</option>
+                </select>
+                <button class="btn btn-primary btn-sm" data-save type="button">Update status</button>
+                ${
+                  hasCv
+                    ? `<button class="btn btn-outline btn-sm" data-cv type="button">Download CV</button>`
+                    : ""
+                }
+                <button class="btn btn-outline btn-sm" data-contact type="button">Request contact</button>
+                <button class="btn btn-navy btn-sm" data-interview type="button">Schedule interview</button>
+                <a class="btn btn-outline btn-sm" href="/module4-applications/employer-application-details.html?id=${id}&vacancyId=${vacancyId}">Details</a>
+              </div>
+              <form class="form-grid interview-form" hidden style="margin-top:0.75rem">
+                <label class="field">Title<input name="title" required /></label>
+                <label class="field">Date<input name="interviewDate" type="datetime-local" required /></label>
+                <label class="field">Duration (min)<input name="durationMinutes" type="number" min="15" max="240" value="30" required /></label>
+                <label class="field">Location<input name="location" /></label>
+                <label class="field">Meeting link<input name="meetingLink" placeholder="https://meet.google.com/..." /></label>
+                <label class="field">Instructions<textarea name="instructions"></textarea></label>
+                <button class="btn btn-primary btn-sm" type="submit">Save interview</button>
+              </form>
             </div>
-            ${a.coverLetter ? `<p class="muted" style="margin-top:0.5rem">${SR.utils.escape(a.coverLetter)}</p>` : ""}
-            <div class="row-actions">
-              <select data-status>
-                <option value="UnderReview">UnderReview</option>
-                <option value="Shortlisted">Shortlisted</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-              <button class="btn btn-primary btn-sm" data-save type="button">Update status</button>
-              <button class="btn btn-outline btn-sm" data-contact type="button">Request contact</button>
-              <button class="btn btn-navy btn-sm" data-interview type="button">Schedule interview</button>
-              <a class="btn btn-outline btn-sm" href="/module4-applications/employer-application-details.html?id=${a.id}&vacancyId=${vacancyId}">Details</a>
-            </div>
-            <form class="form-grid interview-form" hidden style="margin-top:0.75rem">
-              <label class="field">Title<input name="title" required /></label>
-              <label class="field">Date<input name="interviewDate" type="datetime-local" required /></label>
-              <label class="field">Duration (min)<input name="durationMinutes" type="number" min="15" max="240" value="30" required /></label>
-              <label class="field">Location<input name="location" /></label>
-              <label class="field">Meeting link<input name="meetingLink" placeholder="https://meet.google.com/..." /></label>
-              <label class="field">Instructions<textarea name="instructions"></textarea></label>
-              <button class="btn btn-primary btn-sm" type="submit">Save interview</button>
-            </form>
-          </div>`
-              )
+            ${SR.utils.matchSide(match)}
+          </div>`;
+              })
               .join("")
-          : SR.ui.empty("No applicants yet.")
+          : SR.ui.empty("No applicants yet.", {
+              detail: "Share your open vacancies or check back after candidates apply.",
+              cta: { href: "/module3-employer/vacancies.html", label: "Manage Vacancies" },
+            })
       }</div>`;
 
       ctx.body.querySelectorAll(".list-item").forEach((item) => {
@@ -271,6 +349,14 @@ SR.module4 = (function () {
             SR.ui.toast(e.message, "error");
           }
         };
+        item.querySelector("[data-cv]")?.addEventListener("click", async () => {
+          try {
+            await SR.api.download(`/api/employer/applications/${id}/cv`, "applicant-cv.pdf");
+            SR.ui.toast("CV downloaded");
+          } catch (e) {
+            SR.ui.toast(e.message, "error");
+          }
+        });
         item.querySelector("[data-contact]").onclick = () => {
           SR.ui.modal({
             title: "Contact request",
@@ -310,6 +396,9 @@ SR.module4 = (function () {
       });
     } catch (e) {
       SR.ui.toast(e.message, "error");
+      ctx.body.innerHTML = SR.ui.errorState(e, {
+        cta: { href: "/module3-employer/vacancies.html", label: "Go to Vacancies" },
+      });
     }
   }
 
@@ -324,23 +413,50 @@ SR.module4 = (function () {
     }
     try {
       const a = await SR.api.get(`/api/applications/${id}`);
+      const name = a.candidateName || a.CandidateName || `Candidate #${a.jobSeekerProfileId}`;
+      const hasCv = a.hasCv ?? a.HasCv;
+      const cvName = a.cvFileName || a.CvFileName || "CV";
       ctx.body.innerHTML = `
         <div class="card">
-          <h2>Application #${a.id}</h2>
-          <div class="meta" style="margin-top:0.6rem">
-            ${SR.ui.badge(a.status, SR.status.applicationKind(a.status))}
-            <span>Candidate Profile #${a.jobSeekerProfileId}</span>
-            <span>Match ${a.matchScore ?? 0}</span>
-            <span>${SR.utils.formatDate(a.appliedAt)}</span>
-          </div>
-          ${a.coverLetter ? `<p style="margin-top:0.9rem">${SR.utils.escape(a.coverLetter)}</p>` : ""}
-          <p class="muted" style="margin-top:0.8rem">Candidate name/CV are not included in ApplicationDto. Use status and contact request flows.</p>
-          <div class="row-actions">
-            <a class="btn btn-outline" href="/module4-applications/employer-applicants.html${vacancyId ? `?vacancyId=${vacancyId}` : ""}">Back</a>
+          <div class="list-item-with-score" style="padding:0;border:0;box-shadow:none;background:transparent">
+            <div class="list-item-main">
+              <h2>${SR.utils.escape(name)}</h2>
+              <div class="meta" style="margin-top:0.6rem">
+                ${SR.ui.badge(SR.status.application(a.status), SR.status.applicationKind(a.status))}
+                ${SR.utils.matchPill(a.matchScore ?? a.MatchScore ?? 0)}
+                <span>Application #${a.id}</span>
+                <span>${SR.utils.formatDate(a.appliedAt)}</span>
+                ${hasCv ? `<span>${SR.utils.escape(cvName)}</span>` : `<span class="muted">No CV uploaded</span>`}
+              </div>
+              ${a.coverLetter ? `<p style="margin-top:0.9rem">${SR.utils.escape(a.coverLetter)}</p>` : ""}
+              <div class="row-actions">
+                ${
+                  hasCv
+                    ? `<button class="btn btn-primary" id="download-cv" type="button">Download CV</button>`
+                    : ""
+                }
+                <a class="btn btn-outline" href="/module4-applications/employer-applicants.html${vacancyId ? `?vacancyId=${vacancyId}` : ""}">Back</a>
+              </div>
+            </div>
+            ${SR.utils.matchSide(a.matchScore ?? a.MatchScore ?? 0)}
           </div>
         </div>`;
+      document.getElementById("download-cv")?.addEventListener("click", async () => {
+        try {
+          await SR.api.download(`/api/employer/applications/${id}/cv`, cvName);
+          SR.ui.toast("CV downloaded");
+        } catch (e) {
+          SR.ui.toast(e.message, "error");
+        }
+      });
     } catch (e) {
       SR.ui.toast(e.message, "error");
+      ctx.body.innerHTML = SR.ui.errorState(e, {
+        cta: {
+          href: "/module4-applications/employer-applicants.html",
+          label: "Back to applicants",
+        },
+      });
     }
   }
 
@@ -364,7 +480,13 @@ SR.module4 = (function () {
           </div>`
               )
               .join("")
-          : SR.ui.empty("No contact requests.")
+          : SR.ui.empty("No contact requests.", {
+              detail: "Request contact from a candidate on the Applicants page.",
+              cta: {
+                href: "/module4-applications/employer-applicants.html",
+                label: "View Applicants",
+              },
+            })
       }</div>`;
     } catch (e) {
       SR.ui.toast(e.message, "error");
@@ -401,7 +523,13 @@ SR.module4 = (function () {
             </div>`;
               })
               .join("")
-          : SR.ui.empty("No interviews scheduled.")
+          : SR.ui.empty("No interviews scheduled.", {
+              detail: "Schedule interviews from a candidate on the Applicants page.",
+              cta: {
+                href: "/module4-applications/employer-applicants.html",
+                label: "View Applicants",
+              },
+            })
       }</div>`;
     } catch (e) {
       SR.ui.toast(e.message, "error");

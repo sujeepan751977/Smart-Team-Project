@@ -30,6 +30,14 @@ namespace Recruitment_Project.Repositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<CvDocument?> GetLatestByJobSeekerProfileIdAsync(
+            int jobSeekerProfileId)
+        {
+            return await _context.CvDocuments
+                .Where(x => x.JobSeekerProfileId == jobSeekerProfileId)
+                .OrderByDescending(x => x.UploadedAt)
+                .FirstOrDefaultAsync();
+        }
 
         public async Task<List<CvDocument>> GetAllByUserIdAsync(int userId)
         {

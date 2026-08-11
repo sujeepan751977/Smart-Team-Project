@@ -10,13 +10,14 @@ using Recruitment_Project.Middleware;
 using Recruitment_Project.Options;
 using Recruitment_Project.Repositories;
 using Recruitment_Project.Services;
+using System.Security.Claims;
 using System.Text;
 
 namespace Recruitment_Project
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +57,9 @@ namespace Recruitment_Project
                     JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
+                    // Keep claim types as emitted in the token (NameIdentifier, Role, etc.)
+                    options.MapInboundClaims = false;
+
                     options.TokenValidationParameters =
                         new TokenValidationParameters
                         {
@@ -70,7 +74,10 @@ namespace Recruitment_Project
                             IssuerSigningKey =
                                 new SymmetricSecurityKey(
                                     Encoding.UTF8.GetBytes(
-                                        jwtOptions.SecretKey))
+                                        jwtOptions.SecretKey)),
+
+                            NameClaimType = ClaimTypes.NameIdentifier,
+                            RoleClaimType = ClaimTypes.Role
                         };
                 });
 
@@ -321,6 +328,14 @@ namespace Recruitment_Project
             var app = builder.Build();
 
             // -------------------------
+            // Demo mock data seeder (Development)
+            // -------------------------
+            if (app.Environment.IsDevelopment())
+            {
+                await DemoDataSeeder.SeedAsync(app.Services, app.Configuration);
+            }
+
+            // -------------------------
             // Global Exception Middleware
             // -------------------------
             app.UseMiddleware<ExceptionMiddleware>();
@@ -365,7 +380,14 @@ namespace Recruitment_Project
             // -------------------------
             app.MapControllers();
 
-            app.MapFallbackToFile("not-found.html");
+            // Serve landing page at "/" explicitly (MapFallback must not own root).
+            app.MapGet("/", (IWebHostEnvironment env) =>
+                Results.File(
+                    Path.Combine(env.WebRootPath, "index.html"),
+                    "text/html"));
+
+            // HTML 404 only for non-file paths that are not APIs/controllers.
+            app.MapFallbackToFile("{*path:nonfile}", "not-found.html");
 
             app.Run();
         }

@@ -12,7 +12,7 @@ SR.module5 = (function () {
       title: "Report this job",
       bodyHtml: `
         <p class="muted" style="margin-bottom:0.8rem">Reports are reviewed by administrators. One report does not automatically disable an employer.</p>
-        <label class="field">Reason <span class="req">*</span>
+        <label class="field"><span class="field-label">Reason <span class="req" aria-hidden="true">*</span></span>
           <select id="reason" required>
             <option value="1">Fake Job</option>
             <option value="2">Scam</option>
@@ -88,7 +88,9 @@ SR.module5 = (function () {
             </div>`;
               })
               .join("")
-          : SR.ui.empty("No notifications.")
+          : SR.ui.empty("You're all caught up.", {
+              detail: "New application, verification, and moderation updates will appear here.",
+            })
       }</div>`;
 
       document.getElementById("read-all")?.addEventListener("click", async () => {
@@ -139,7 +141,10 @@ SR.module5 = (function () {
           </div>`
               )
               .join("")
-          : SR.ui.empty("You have not reported any jobs.")
+          : SR.ui.empty("You have not reported any jobs.", {
+              detail: "If a listing looks suspicious, open the job and use Report Job.",
+              cta: { href: "/module2-jobseeker/jobs.html", label: "Find Jobs" },
+            })
       }</div>`;
     } catch (e) {
       SR.ui.toast(e.message, "error");
@@ -153,16 +158,19 @@ SR.module5 = (function () {
       const list = await SR.api.get("/api/admin/job-reports");
       const items = Array.isArray(list) ? list : [];
       ctx.body.innerHTML = `
-        <div class="card" style="margin-bottom:1rem">
-          <label class="field">Filter by status
-            <select id="status-filter">
-              <option value="">All</option>
-              <option value="1">Pending</option>
-              <option value="2">Under Review</option>
-              <option value="3">Action Taken</option>
-              <option value="4">Rejected</option>
-            </select>
-          </label>
+        <div class="card filter-bar" style="margin-bottom:1rem">
+          <div class="filter-toolbar">
+            <label class="filter-select">
+              <span class="field-label">Status</span>
+              <select id="status-filter">
+                <option value="">All</option>
+                <option value="1">Pending</option>
+                <option value="2">Under Review</option>
+                <option value="3">Action Taken</option>
+                <option value="4">Rejected</option>
+              </select>
+            </label>
+          </div>
         </div>
         <div id="reports-list" class="list"></div>
         <div class="card moderation-box">
@@ -178,20 +186,22 @@ SR.module5 = (function () {
               </select>
             </label>
             <label class="field">Vacancy ID to close<input name="vacancyId" type="number" /></label>
-            <label class="field">Decision note <span class="req">*</span><textarea name="decisionNote" required maxlength="1000"></textarea></label>
+            <label class="field"><span class="field-label">Decision note <span class="req" aria-hidden="true">*</span></span><textarea name="decisionNote" required maxlength="1000"></textarea></label>
             <button class="btn btn-primary" type="submit">Apply employer action</button>
             <button class="btn btn-danger" id="close-vac" type="button">Close vacancy</button>
           </form>
         </div>`;
 
       const render = async () => {
-        const status = document.getElementById("status-filter").value;
+        const filter = document.getElementById("status-filter");
+        const box = document.getElementById("reports-list");
+        if (!filter || !box) return;
+        const status = filter.value;
         let data = items;
         if (status) {
           data = await SR.api.get(`/api/admin/job-reports/status/${status}`);
           data = Array.isArray(data) ? data : [];
         }
-        const box = document.getElementById("reports-list");
         box.innerHTML = data.length
           ? data
               .map(
@@ -240,10 +250,11 @@ SR.module5 = (function () {
         });
       };
 
-      document.getElementById("status-filter").onchange = render;
+      const statusFilter = document.getElementById("status-filter");
+      if (statusFilter) statusFilter.onchange = render;
       await render();
 
-      document.getElementById("mod-form").onsubmit = (e) => {
+      document.getElementById("mod-form")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const d = SR.utils.formToObject(e.target);
         if (!d.decisionNote) {
@@ -262,9 +273,9 @@ SR.module5 = (function () {
             SR.ui.toast("Action applied");
           },
         });
-      };
+      });
 
-      document.getElementById("close-vac").onclick = () => {
+      document.getElementById("close-vac")?.addEventListener("click", () => {
         const d = SR.utils.formToObject(document.getElementById("mod-form"));
         if (!d.decisionNote || !d.vacancyId) {
           SR.ui.toast("Vacancy ID and decision note are required", "error");
@@ -281,7 +292,7 @@ SR.module5 = (function () {
             SR.ui.toast("Vacancy closed");
           },
         });
-      };
+      });
     } catch (e) {
       SR.ui.toast(e.message, "error");
     }
@@ -297,12 +308,48 @@ SR.module5 = (function () {
     }
     try {
       const r = await SR.api.get(`/api/admin/job-reports/${id}`);
-      ctx.body.innerHTML = `<div class="card"><pre style="white-space:pre-wrap;font:inherit;margin:0">${SR.utils.escape(
-        JSON.stringify(r, null, 2)
-      )}</pre>
-        <div class="row-actions"><a class="btn btn-outline" href="/module5-trust/admin-reported-jobs.html">Back</a></div></div>`;
+      const reportedBy =
+        r.reportedByUserId ??
+        r.ReportedByUserId ??
+        r.reportedBy ??
+        r.ReportedBy ??
+        null;
+      const details = r.description || r.Description || r.details || "";
+      const vacancyId = r.vacancyId ?? r.VacancyId ?? "—";
+      ctx.body.innerHTML = `
+        <a class="back-link" href="/module5-trust/admin-reported-jobs.html">← Back to reported jobs</a>
+        <div class="card" style="margin-top:0.75rem">
+          <h2>Report #${SR.utils.escape(r.id ?? id)}</h2>
+          <div class="meta" style="margin-top:0.7rem">
+            ${SR.ui.badge(SR.status.reportStatus(r.status ?? r.Status), SR.status.reportKind(r.status ?? r.Status))}
+            <span>${SR.utils.escape(SR.status.reportReason(r.reason ?? r.Reason))}</span>
+            ${r.reportedAt || r.createdAt ? `<span>${SR.utils.formatDate(r.reportedAt || r.createdAt)}</span>` : ""}
+            ${r.reviewedAt ? `<span>Reviewed ${SR.utils.formatDate(r.reviewedAt)}</span>` : ""}
+          </div>
+          <div class="form-grid two" style="margin-top:1rem">
+            <div><strong>Report ID</strong><p class="muted">${SR.utils.escape(r.id ?? id)}</p></div>
+            <div><strong>Vacancy ID</strong><p class="muted">${SR.utils.escape(vacancyId)}</p></div>
+            <div><strong>Reason</strong><p class="muted">${SR.utils.escape(SR.status.reportReason(r.reason ?? r.Reason))}</p></div>
+            <div><strong>Status</strong><p class="muted">${SR.utils.escape(SR.status.reportStatus(r.status ?? r.Status))}</p></div>
+            ${
+              reportedBy != null
+                ? `<div><strong>Reported by</strong><p class="muted">User #${SR.utils.escape(reportedBy)}</p></div>`
+                : ""
+            }
+          </div>
+          ${
+            details
+              ? `<h3 style="margin:1rem 0 0.45rem">Details</h3><p>${SR.utils.escape(details)}</p>`
+              : `<p class="muted" style="margin-top:1rem">No additional details provided.</p>`
+          }
+          <div class="row-actions" style="margin-top:1rem">
+            <a class="btn btn-outline" href="/module5-trust/admin-reported-jobs.html">Back</a>
+          </div>
+        </div>`;
     } catch (e) {
-      SR.ui.toast(e.message, "error");
+      ctx.body.innerHTML = SR.ui.errorState(e, {
+        cta: { href: "/module5-trust/admin-reported-jobs.html", label: "Back to list" },
+      });
     }
   }
 
@@ -328,18 +375,20 @@ SR.module5 = (function () {
                       .map(
                         (a) => `
                 <tr>
-                  <td data-label="Admin">${SR.utils.escape(a.adminUserId ?? a.administratorId ?? "—")}</td>
-                  <td data-label="Action">${SR.utils.escape(SR.status.moderationAction(a.actionType || a.action))}</td>
+                  <td class="cell-strong" data-label="Admin">${SR.utils.escape(a.adminUserId ?? a.administratorId ?? "—")}</td>
+                  <td data-label="Action">${SR.ui.badge(SR.status.moderationAction(a.actionType || a.action), "neutral")}</td>
                   <td data-label="Target">${SR.utils.escape(a.targetEntity || a.entityType || "—")}</td>
-                  <td data-label="Target ID">${SR.utils.escape(a.targetId ?? a.entityId ?? "—")}</td>
-                  <td data-label="Reason">${SR.utils.escape(a.decisionNote || a.reason || "—")}</td>
+                  <td class="cell-id" data-label="Target ID">${SR.utils.escape(a.targetId ?? a.entityId ?? "—")}</td>
+                  <td class="cell-muted" data-label="Reason">${SR.utils.escape(a.decisionNote || a.reason || "—")}</td>
                   <td data-label="Previous">${SR.utils.escape(a.previousValue ?? "—")}</td>
                   <td data-label="New">${SR.utils.escape(a.newValue ?? "—")}</td>
-                  <td data-label="Date">${SR.utils.formatDate(a.createdAt || a.actionDate)}</td>
+                  <td class="cell-muted" data-label="Date">${SR.utils.formatDate(a.createdAt || a.actionDate)}</td>
                 </tr>`
                       )
                       .join("")
-                  : `<tr><td colspan="8">${SR.ui.empty("No audit entries.")}</td></tr>`
+                  : `<tr><td colspan="8">${SR.ui.empty("No moderation actions yet.", {
+                      detail: "Warn, suspend, disable, and vacancy-close actions will be listed here.",
+                    })}</td></tr>`
               }
             </tbody>
           </table>

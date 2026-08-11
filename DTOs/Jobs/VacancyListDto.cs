@@ -19,5 +19,10 @@
         public List<string> RequiredSkills { get; set; } = new();
 
         public double MatchScore { get; set; }
+
+        /// <summary>
+        /// True when score was calculated for the signed-in job seeker.
+        /// </summary>
+        public bool HasMatchScore { get; set; }
     }
 }

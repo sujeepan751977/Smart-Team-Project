@@ -6,7 +6,10 @@ namespace Recruitment_Project.Helpers
     {
         public static int GetUserId(this ClaimsPrincipal user)
         {
-            var claim = user.FindFirst(ClaimTypes.NameIdentifier);
+            var claim =
+                user.FindFirst(ClaimTypes.NameIdentifier)
+                ?? user.FindFirst("sub")
+                ?? user.FindFirst("nameid");
 
             if (claim == null)
                 throw new UnauthorizedAccessException("User ID claim not found.");

@@ -59,6 +59,34 @@ SR.utils = {
       return false;
     }
   },
+
+  matchPercent(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  },
+
+  matchTone(value) {
+    const p = SR.utils.matchPercent(value);
+    if (p >= 70) return "high";
+    if (p >= 40) return "mid";
+    return "low";
+  },
+
+  matchPill(value) {
+    const p = SR.utils.matchPercent(value);
+    const tone = SR.utils.matchTone(p);
+    return `<span class="match-pill" data-tone="${tone}" title="Match score"><span class="match-pill-value">${p}%</span> Match</span>`;
+  },
+
+  matchSide(value) {
+    const p = SR.utils.matchPercent(value);
+    const tone = SR.utils.matchTone(p);
+    return `<div class="job-card-score" data-tone="${tone}" title="Your match score">
+      <span class="job-card-score-value">${p}%</span>
+      <span class="job-card-score-label">Match</span>
+    </div>`;
+  },
 };
 
 /* Enum / status helpers — never show raw numbers */
@@ -114,23 +142,65 @@ SR.status = {
     return map[v] || String(v ?? "—");
   },
   application(v) {
-    return String(v || "—");
+    const map = {
+      1: "Applied",
+      2: "Under Review",
+      3: "Shortlisted",
+      4: "Rejected",
+      Applied: "Applied",
+      UnderReview: "Under Review",
+      Shortlisted: "Shortlisted",
+      Rejected: "Rejected",
+    };
+    return map[v] || String(v || "—");
   },
   applicationKind(v) {
-    const s = String(v || "");
+    const s = SR.status.application(v);
     if (s === "Shortlisted") return "ok";
     if (s === "Rejected") return "danger";
-    if (s === "UnderReview") return "warn";
+    if (s === "Under Review") return "warn";
     return "neutral";
   },
   contact(v) {
-    return String(v || "—");
+    const map = {
+      1: "Pending",
+      2: "Accepted",
+      3: "Rejected",
+      4: "Cancelled",
+      Pending: "Pending",
+      Accepted: "Accepted",
+      Rejected: "Rejected",
+      Cancelled: "Cancelled",
+    };
+    return map[v] || String(v || "—");
   },
   contactKind(v) {
-    const s = String(v || "");
+    const s = SR.status.contact(v);
     if (s === "Accepted") return "ok";
     if (s === "Rejected" || s === "Cancelled") return "danger";
     if (s === "Pending") return "warn";
+    return "neutral";
+  },
+  interview(v) {
+    const map = {
+      1: "Scheduled",
+      2: "Completed",
+      3: "Cancelled",
+      4: "Rescheduled",
+      5: "No Show",
+      Scheduled: "Scheduled",
+      Completed: "Completed",
+      Cancelled: "Cancelled",
+      Rescheduled: "Rescheduled",
+      NoShow: "No Show",
+    };
+    return map[v] || String(v || "—");
+  },
+  interviewKind(v) {
+    const s = SR.status.interview(v);
+    if (s === "Completed") return "ok";
+    if (s === "Cancelled" || s === "No Show") return "danger";
+    if (s === "Rescheduled") return "warn";
     return "neutral";
   },
   notificationType(v) {

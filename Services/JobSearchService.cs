@@ -28,7 +28,8 @@ namespace Recruitment_Project.Services
         }
 
         public async Task<List<VacancyListDto>> SearchJobsAsync(
-            JobSearchRequestDto request)
+            JobSearchRequestDto request,
+            int? userId = null)
         {
             if (request.PageNumber < 1)
                 request.PageNumber = 1;
@@ -46,8 +47,30 @@ namespace Recruitment_Project.Services
                     request.PageNumber,
                     request.PageSize);
 
-            return vacancies.Select(x =>
-                new VacancyListDto
+            var jobSeeker = userId.HasValue
+                ? await _jobSeekerRepository
+                    .GetProfileByUserIdAsync(userId.Value)
+                : null;
+
+            var results = new List<VacancyListDto>();
+
+            foreach (var x in vacancies)
+            {
+                double matchScore = 0;
+                var hasMatchScore = jobSeeker != null;
+
+                if (jobSeeker != null)
+                {
+                    var match =
+                        await _matchingService
+                            .CalculateMatchAsync(
+                                jobSeeker.Id,
+                                x.Id);
+
+                    matchScore = match.TotalMatchScore;
+                }
+
+                results.Add(new VacancyListDto
                 {
                     Id = x.Id,
 
@@ -73,9 +96,22 @@ namespace Recruitment_Project.Services
                         x.RequiredSkills
                         .Where(s => s.Skill != null)
                         .Select(s => s.Skill.Name)
-                        .ToList()
-                })
-                .ToList();
+                        .ToList(),
+
+                    MatchScore = matchScore,
+                    HasMatchScore = hasMatchScore
+                });
+            }
+
+            if (jobSeeker != null)
+            {
+                results = results
+                    .OrderByDescending(x => x.MatchScore)
+                    .ThenBy(x => x.JobTitle)
+                    .ToList();
+            }
+
+            return results;
         }
 
         public async Task<JobSeekerVacancyDetailsDto?> GetJobDetailsAsync(

@@ -14,6 +14,7 @@ namespace Recruitment_Project.Services
         private readonly IMatchingService _matchingService;
         private readonly IEmployerRepository _employerRepository;
         private readonly INotificationService _notificationService;
+        private readonly ICvRepository _cvRepository;
 
         public ApplicationService(
             IApplicationRepository applicationRepository,
@@ -21,7 +22,8 @@ namespace Recruitment_Project.Services
             IVacancyRepository vacancyRepository,
             IMatchingService matchingService,
             IEmployerRepository employerRepository,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ICvRepository cvRepository)
         {
             _applicationRepository = applicationRepository;
             _jobSeekerRepository = jobSeekerRepository;
@@ -29,6 +31,7 @@ namespace Recruitment_Project.Services
             _matchingService = matchingService;
             _employerRepository = employerRepository;
             _notificationService = notificationService;
+            _cvRepository = cvRepository;
         }
 
         public async Task<ApplicationDto> ApplyAsync(
@@ -133,17 +136,7 @@ namespace Recruitment_Project.Services
                     });
             }
 
-            return new ApplicationDto
-            {
-                Id = application.Id,
-                VacancyId = application.VacancyId,
-                JobSeekerProfileId = application.JobSeekerProfileId,
-                Status = application.Status.ToString(),
-                MatchScore = application.MatchScore,
-                CoverLetter = application.CoverLetter,
-                AppliedAt = application.AppliedAt,
-                UpdatedAt = application.UpdatedAt
-            };
+            return MapToDto(application);
         }
 
         public async Task<List<ApplicationDto>> GetMyApplicationsAsync(
@@ -164,17 +157,7 @@ namespace Recruitment_Project.Services
                     .GetByJobSeekerAsync(jobSeeker.Id);
 
             return applications
-                .Select(x => new ApplicationDto
-                {
-                    Id = x.Id,
-                    VacancyId = x.VacancyId,
-                    JobSeekerProfileId = x.JobSeekerProfileId,
-                    Status = x.Status.ToString(),
-                    MatchScore = x.MatchScore,
-                    CoverLetter = x.CoverLetter,
-                    AppliedAt = x.AppliedAt,
-                    UpdatedAt = x.UpdatedAt
-                })
+                .Select(MapToDto)
                 .ToList();
         }
 
@@ -196,17 +179,7 @@ namespace Recruitment_Project.Services
                     .GetByEmployerAsync(employer.Id);
 
             return applications
-                .Select(x => new ApplicationDto
-                {
-                    Id = x.Id,
-                    VacancyId = x.VacancyId,
-                    JobSeekerProfileId = x.JobSeekerProfileId,
-                    Status = x.Status.ToString(),
-                    MatchScore = x.MatchScore,
-                    CoverLetter = x.CoverLetter,
-                    AppliedAt = x.AppliedAt,
-                    UpdatedAt = x.UpdatedAt
-                })
+                .Select(MapToDto)
                 .ToList();
         }
 
@@ -245,17 +218,7 @@ namespace Recruitment_Project.Services
                     "You are not authorized to view this application.");
             }
 
-            return new ApplicationDto
-            {
-                Id = application.Id,
-                VacancyId = application.VacancyId,
-                JobSeekerProfileId = application.JobSeekerProfileId,
-                Status = application.Status.ToString(),
-                MatchScore = application.MatchScore,
-                CoverLetter = application.CoverLetter,
-                AppliedAt = application.AppliedAt,
-                UpdatedAt = application.UpdatedAt
-            };
+            return MapToDto(application);
         }
 
         public async Task UpdateStatusAsync(
@@ -363,18 +326,93 @@ namespace Recruitment_Project.Services
                     .GetByVacancyAsync(vacancyId);
 
             return applications
-                .Select(x => new ApplicationDto
-                {
-                    Id = x.Id,
-                    VacancyId = x.VacancyId,
-                    JobSeekerProfileId = x.JobSeekerProfileId,
-                    Status = x.Status.ToString(),
-                    MatchScore = x.MatchScore,
-                    CoverLetter = x.CoverLetter,
-                    AppliedAt = x.AppliedAt,
-                    UpdatedAt = x.UpdatedAt
-                })
+                .Select(MapToDto)
                 .ToList();
+        }
+
+        public async Task<(Stream FileStream, string FileName, string ContentType)> DownloadApplicantCvAsync(
+            int userId,
+            int applicationId)
+        {
+            var employer =
+                await _employerRepository
+                    .GetByUserIdAsync(userId);
+
+            if (employer == null)
+            {
+                throw new KeyNotFoundException(
+                    "Employer profile not found.");
+            }
+
+            var application =
+                await _applicationRepository
+                    .GetByIdAsync(applicationId);
+
+            if (application == null)
+            {
+                throw new KeyNotFoundException(
+                    "Application not found.");
+            }
+
+            if (application.Vacancy.EmployerProfileId != employer.Id)
+            {
+                throw new UnauthorizedAccessException(
+                    "You are not authorized to download this CV.");
+            }
+
+            var cv =
+                application.JobSeekerProfile?.CvDocuments?
+                    .OrderByDescending(x => x.UploadedAt)
+                    .FirstOrDefault()
+                ?? await _cvRepository
+                    .GetLatestByJobSeekerProfileIdAsync(
+                        application.JobSeekerProfileId);
+
+            if (cv == null || string.IsNullOrWhiteSpace(cv.FilePath))
+            {
+                throw new KeyNotFoundException(
+                    "No CV uploaded for this applicant.");
+            }
+
+            if (!File.Exists(cv.FilePath))
+            {
+                throw new KeyNotFoundException(
+                    "CV file was not found on the server.");
+            }
+
+            Stream stream = new FileStream(
+                cv.FilePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read);
+
+            var contentType = string.IsNullOrWhiteSpace(cv.ContentType)
+                ? "application/octet-stream"
+                : cv.ContentType;
+
+            return (stream, cv.FileName, contentType);
+        }
+
+        private static ApplicationDto MapToDto(JobApplication application)
+        {
+            var cv = application.JobSeekerProfile?.CvDocuments?
+                .OrderByDescending(x => x.UploadedAt)
+                .FirstOrDefault();
+
+            return new ApplicationDto
+            {
+                Id = application.Id,
+                VacancyId = application.VacancyId,
+                JobSeekerProfileId = application.JobSeekerProfileId,
+                CandidateName = application.JobSeekerProfile?.User?.FullName,
+                Status = application.Status.ToString(),
+                MatchScore = application.MatchScore,
+                CoverLetter = application.CoverLetter,
+                HasCv = cv != null,
+                CvFileName = cv?.FileName,
+                AppliedAt = application.AppliedAt,
+                UpdatedAt = application.UpdatedAt
+            };
         }
 
         private static bool IsValidStatusTransition(

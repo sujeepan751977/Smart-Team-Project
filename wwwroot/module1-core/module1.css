@@ -31,10 +31,15 @@
   align-items: center;
 }
 
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
+.hero-actions .btn-outline {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.hero-actions .btn-outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
 }
 
 .hero-search h2 {
@@ -49,40 +54,85 @@
 }
 
 .auth-brand {
-  background: linear-gradient(160deg, var(--navy), var(--navy-soft));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 35%),
+    linear-gradient(160deg, #071628 0%, var(--navy) 45%, var(--navy-soft) 100%);
   color: #fff;
-  padding: 2.5rem;
+  padding: 2.75rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 1rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.auth-brand .logo {
+  margin-bottom: 0.75rem;
 }
 
 .auth-brand h1 {
   font-size: clamp(1.8rem, 3vw, 2.4rem);
   max-width: 12ch;
+  margin: 0;
 }
 
 .auth-brand p {
   max-width: 34ch;
   color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  line-height: 1.55;
 }
 
 .auth-panel {
   display: grid;
   place-items: center;
   padding: 2rem 1rem;
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse 80% 60% at 80% 10%, rgba(29, 78, 216, 0.06), transparent 55%),
+    var(--bg);
 }
 
 .auth-card {
   width: min(420px, 100%);
+  padding: 1.7rem 1.55rem 1.45rem;
+  border: 1px solid #e6edf5;
+  border-radius: 18px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.auth-card-register {
+  width: min(460px, 100%);
+}
+
+.auth-card h1,
+.auth-card h2 {
+  margin: 0;
+  color: var(--color-secondary);
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+}
+
+.auth-lead {
+  margin: 0.35rem 0 1.15rem;
+}
+
+.auth-footer {
+  margin: 1.1rem 0 0;
+}
+
+.auth-footer a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
 }
 
 .password-wrap {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.5rem;
+  position: relative;
 }
 
 .admin-shortcuts {
@@ -116,6 +166,7 @@
 
   .auth-brand {
     min-height: auto;
-    padding: 2rem 1.25rem;
+    padding: 1.75rem 1.25rem;
+    border-right: 0;
   }
 }

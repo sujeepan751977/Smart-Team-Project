@@ -8,11 +8,17 @@
 
         public int JobSeekerProfileId { get; set; }
 
+        public string? CandidateName { get; set; }
+
         public string Status { get; set; } = string.Empty;
 
         public decimal MatchScore { get; set; }
 
         public string? CoverLetter { get; set; }
+
+        public bool HasCv { get; set; }
+
+        public string? CvFileName { get; set; }
 
         public DateTime AppliedAt { get; set; }
 

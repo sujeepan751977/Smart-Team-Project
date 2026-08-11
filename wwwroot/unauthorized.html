@@ -15,16 +15,26 @@
     <div class="card" style="max-width:480px;margin:0 auto;text-align:center">
       <h1>Unauthorized</h1>
       <p class="muted" style="margin:0.8rem 0 1.2rem">You need to sign in to continue.</p>
-      <a class="btn btn-primary" href="/login.html">Sign in</a>
+      <a class="btn btn-primary" id="go-home" href="/login.html">Sign in</a>
     </div>
   </main>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => SR.ui.mountPublicHeader());
-  </script>
   <script src="/shared/utils.js"></script>
   <script src="/shared/apiClient.js"></script>
   <script src="/shared/auth.js"></script>
   <script src="/shared/guards.js"></script>
   <script src="/shared/ui.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      SR.ui.mountPublicHeader();
+      if (SR.auth.isLoggedIn()) {
+        const user = SR.auth.getUser();
+        const btn = document.getElementById("go-home");
+        if (btn) {
+          btn.href = SR.auth.homeForRole(user?.role);
+          btn.textContent = "Go to dashboard";
+        }
+      }
+    });
+  </script>
 </body>
 </html>
